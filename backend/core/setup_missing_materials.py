@@ -23,7 +23,7 @@ def add_missing_materials():
         # User-specified equipment
         {
             'name': 'Laptop - Office',
-            'category': 'Appareils Utilisateur',
+            'category': 'User Devices',
             'price_france': 12.00,
             'price_morocco': 127.20,
             'description': 'Office Laptop',
@@ -31,7 +31,7 @@ def add_missing_materials():
         },
         {
             'name': 'Laptop - Tech',
-            'category': 'Appareils Utilisateur',
+            'category': 'User Devices',
             'price_france': 5.00,
             'price_morocco': 53.00,
             'description': 'Technical Laptop',
@@ -39,7 +39,7 @@ def add_missing_materials():
         },
         {
             'name': 'Desktop - Office',
-            'category': 'Appareils Utilisateur',
+            'category': 'User Devices',
             'price_france': 3.00,
             'price_morocco': 33.60,
             'description': 'Office Desktop',
@@ -47,7 +47,7 @@ def add_missing_materials():
         },
         {
             'name': 'Desktop - Tech',
-            'category': 'Appareils Utilisateur',
+            'category': 'User Devices',
             'price_france': 2.23,
             'price_morocco': 25.00,
             'description': 'Technical Desktop',
@@ -55,7 +55,7 @@ def add_missing_materials():
         },
         {
             'name': 'Printer',
-            'category': 'Appareils Utilisateur',
+            'category': 'User Devices',
             'price_france': 1.00,
             'price_morocco': 10.60,
             'description': 'Printer',
@@ -63,7 +63,7 @@ def add_missing_materials():
         },
         {
             'name': 'Access Point',
-            'category': 'Équipement Réseau',
+            'category': 'Network Equipment',
             'price_france': 150.00,
             'price_morocco': 1500.00,
             'description': 'Wireless Access Point',
@@ -71,7 +71,7 @@ def add_missing_materials():
         },
         {
             'name': 'Traceau',
-            'category': 'Appareils Utilisateur',
+            'category': 'User Devices',
             'price_france': 1.00,
             'price_morocco': 10.60,
             'description': 'Traceau Device',
@@ -79,7 +79,7 @@ def add_missing_materials():
         },
         {
             'name': 'Visio endpoint',
-            'category': 'Appareils Utilisateur',
+            'category': 'Videoconferencing',
             'price_france': 500.00,
             'price_morocco': 5000.00,
             'description': 'Videoconferencing Endpoint',
@@ -113,7 +113,7 @@ def add_missing_materials():
         },
         {
             'name': 'Server Dell R540',
-            'category': 'Équipement Serveur',
+            'category': 'Server Equipment',
             'price_france': 2000.00,
             'price_morocco': 20000.00,
             'description': 'Dell R540 Server',
@@ -121,7 +121,7 @@ def add_missing_materials():
         },
         {
             'name': 'Switch 24 Ports PoE',
-            'category': 'Équipement Réseau',
+            'category': 'Network Equipment',
             'price_france': 800.00,
             'price_morocco': 8000.00,
             'description': '24 Port PoE Switch',
@@ -137,7 +137,7 @@ def add_missing_materials():
         },
         {
             'name': 'KVM Console',
-            'category': 'Équipement Réseau',
+            'category': 'Network Equipment',
             'price_france': 300.00,
             'price_morocco': 3000.00,
             'description': 'KVM Console',
@@ -145,7 +145,7 @@ def add_missing_materials():
         },
         {
             'name': 'KVM Cables',
-            'category': 'Équipement Réseau',
+            'category': 'Network Equipment',
             'price_france': 50.00,
             'price_morocco': 500.00,
             'description': 'KVM Cables',
@@ -153,7 +153,7 @@ def add_missing_materials():
         },
         {
             'name': 'DAC Cable 1m',
-            'category': 'Équipement Réseau',
+            'category': 'Network Equipment',
             'price_france': 100.00,
             'price_morocco': 1000.00,
             'description': 'DAC Cable 1m',
@@ -161,7 +161,7 @@ def add_missing_materials():
         },
         {
             'name': 'Transceivers',
-            'category': 'Équipement Réseau',
+            'category': 'Network Equipment',
             'price_france': 80.00,
             'price_morocco': 800.00,
             'description': 'Network Transceivers',
@@ -169,7 +169,7 @@ def add_missing_materials():
         },
         {
             'name': 'File Server (Standard)',
-            'category': 'Équipement Serveur',
+            'category': 'Server Equipment',
             'price_france': 1500.00,
             'price_morocco': 15000.00,
             'description': 'Standard File Server',
