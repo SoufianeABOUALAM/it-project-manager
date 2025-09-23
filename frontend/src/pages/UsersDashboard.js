@@ -1,14 +1,27 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Text,
   Icon,
+  Flex,
   Button,
   Container,
   VStack,
   HStack,
   Badge,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  TableContainer,
+  Card,
+  CardBody,
+  CardHeader,
   Heading,
+  Alert,
+  AlertIcon,
   Spinner,
   Center,
   Modal,
@@ -24,23 +37,42 @@ import {
   Select,
   useDisclosure,
   useToast,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
   Grid,
 } from '@chakra-ui/react';
 import {
   MdPeople,
+  MdAdd,
   MdEdit,
   MdDelete,
+  MdMoreVert,
   MdPerson,
   MdEmail,
   MdAdminPanelSettings,
   MdSecurity,
+  MdStar,
+  MdStarBorder,
   MdRefresh,
   MdSearch,
+  MdFilterList,
+  MdVisibility,
+  MdVisibilityOff,
+  MdCheckCircle,
+  MdCancel,
+  MdWarning,
+  MdInfo,
   MdTrendingUp,
   MdTrendingDown,
   MdDateRange,
   MdGroup,
   MdPersonAdd,
+  MdSettings,
+  MdDashboard,
+  MdNotifications,
   MdError,
 } from 'react-icons/md';
 import { useAuth } from '../contexts/AuthContext';
@@ -73,6 +105,10 @@ const UsersDashboard = () => {
   
   const toast = useToast();
 
+  // Chakra UI colors
+  const brandColor = 'brand.500';
+  const textColor = 'secondaryGray.900';
+  const cardBg = 'white';
 
   useEffect(() => {
     if (user && user.is_admin) {
@@ -81,9 +117,9 @@ const UsersDashboard = () => {
       setError('Access denied. Admin privileges required.');
       setLoading(false);
     }
-  }, [user, fetchUsers]);
+  }, [user]);
 
-  const fetchUsers = useCallback(async () => {
+  const fetchUsers = async () => {
     try {
       const response = await axios.get(`${API_URL}auth/users/`, {
         headers: { Authorization: `Token ${authToken}` }
@@ -96,7 +132,7 @@ const UsersDashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [authToken]);
+  };
 
   const handleCreateUser = async () => {
     // Validate password confirmation
@@ -163,7 +199,7 @@ const UsersDashboard = () => {
         delete updateData.password2; // Remove password2 from API call
       }
       
-      await axios.put(`${API_URL}auth/users/${editingUser.id}/`, updateData, {
+      const response = await axios.put(`${API_URL}auth/users/${editingUser.id}/`, updateData, {
         headers: { Authorization: `Token ${authToken}` }
       });
       
@@ -237,6 +273,10 @@ const UsersDashboard = () => {
     onDeleteOpen();
   };
 
+  const resetForm = () => {
+    setFormData({ username: '', email: '', password: '', password2: '', role: 'user' });
+    setEditingUser(null);
+  };
 
   // Filter and sort users
   const filteredUsers = users.filter(user => {

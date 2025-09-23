@@ -24,19 +24,19 @@ def create_categories():
             'description': 'Cables, UPS, PDU and other infrastructure equipment'
         },
         {
-            'name': 'Équipement Réseau',
+            'name': 'Network Equipment',
             'description': 'Network equipment like switches, routers, access points, firewalls'
         },
         {
-            'name': 'Équipement Serveur',
+            'name': 'Server Equipment',
             'description': 'Server equipment and related hardware'
         },
         {
-            'name': 'Appareils Utilisateur',
+            'name': 'User Devices',
             'description': 'User devices like laptops, desktops, printers'
         },
         {
-            'name': 'Licences Logicielles',
+            'name': 'Software Licenses',
             'description': 'Software licenses for Windows and other applications'
         },
         {
@@ -44,12 +44,8 @@ def create_categories():
             'description': 'Internet services and other subscriptions'
         },
         {
-            'name': 'Visioconférence',
+            'name': 'Videoconferencing',
             'description': 'Videoconferencing equipment and endpoints'
-        },
-        {
-            'name': 'User Devices',
-            'description': 'User devices and equipment'
         }
     ]
     
@@ -71,6 +67,14 @@ def create_materials(categories):
     """Create materials based on the spreadsheet data"""
     materials_data = [
         # Infrastructure
+        {
+            'name': 'Rack',
+            'description': 'Server Rack',
+            'category': 'Infrastructure',
+            'price_france': Decimal('500.00'),
+            'price_morocco': Decimal('5000.00'),
+            'unit': 'unit'
+        },
         {
             'name': 'Câble réseau blindé Cat 6 5 m',
             'description': 'Shielded network cable Cat 6 5m',
@@ -119,20 +123,52 @@ def create_materials(categories):
             'price_morocco': Decimal('0.00'),
             'unit': 'unit'
         },
+        {
+            'name': 'Switch 24 Ports PoE',
+            'description': '24 Port PoE Switch',
+            'category': 'Network Equipment',
+            'price_france': Decimal('800.00'),
+            'price_morocco': Decimal('8000.00'),
+            'unit': 'unit'
+        },
+        {
+            'name': 'Switch 48 Ports PoE',
+            'description': '48 Port PoE Switch',
+            'category': 'Network Equipment',
+            'price_france': Decimal('1400.00'),
+            'price_morocco': Decimal('14000.00'),
+            'unit': 'unit'
+        },
         
-        # Équipement Réseau
+        # Network Equipment
         {
             'name': 'KVM Switch',
             'description': 'Dell KVM DMPU2016-G01 16ports',
-            'category': 'Équipement Réseau',
+            'category': 'Network Equipment',
             'price_france': Decimal('1205.00'),
             'price_morocco': Decimal('0.00'),
             'unit': 'unit'
         },
         {
+            'name': 'KVM Console',
+            'description': 'KVM Console',
+            'category': 'Network Equipment',
+            'price_france': Decimal('300.00'),
+            'price_morocco': Decimal('3000.00'),
+            'unit': 'unit'
+        },
+        {
+            'name': 'KVM Cables',
+            'description': 'KVM Cables',
+            'category': 'Network Equipment',
+            'price_france': Decimal('50.00'),
+            'price_morocco': Decimal('500.00'),
+            'unit': 'unit'
+        },
+        {
             'name': 'Access Point',
             'description': 'Wireless Access Point',
-            'category': 'Équipement Réseau',
+            'category': 'Network Equipment',
             'price_france': Decimal('0.00'),
             'price_morocco': Decimal('0.00'),
             'unit': 'unit'
@@ -140,27 +176,35 @@ def create_materials(categories):
         {
             'name': 'Firewall Appliance',
             'description': 'Network Firewall Appliance',
-            'category': 'Équipement Réseau',
+            'category': 'Network Equipment',
             'price_france': Decimal('0.00'),
             'price_morocco': Decimal('0.00'),
             'unit': 'unit'
         },
         
-        # Équipement Serveur
+        # Server Equipment
         {
             'name': 'File Server (Standard)',
             'description': 'Standard File Server',
-            'category': 'Équipement Serveur',
+            'category': 'Server Equipment',
             'price_france': Decimal('0.00'),
             'price_morocco': Decimal('0.00'),
             'unit': 'unit'
         },
+        {
+            'name': 'Application server',
+            'description': 'Application server for local apps',
+            'category': 'Server Equipment',
+            'price_france': Decimal('1800.00'),
+            'price_morocco': Decimal('18000.00'),
+            'unit': 'unit'
+        },
         
-        # Appareils Utilisateur
+        # User Devices
         {
             'name': 'Laptop - Office',
             'description': 'Office Laptop',
-            'category': 'Appareils Utilisateur',
+            'category': 'User Devices',
             'price_france': Decimal('0.00'),
             'price_morocco': Decimal('0.00'),
             'unit': 'unit'
@@ -168,7 +212,7 @@ def create_materials(categories):
         {
             'name': 'Laptop - Tech',
             'description': 'Technical Laptop',
-            'category': 'Appareils Utilisateur',
+            'category': 'User Devices',
             'price_france': Decimal('0.00'),
             'price_morocco': Decimal('0.00'),
             'unit': 'unit'
@@ -176,7 +220,7 @@ def create_materials(categories):
         {
             'name': 'Desktop - Office',
             'description': 'Office Desktop',
-            'category': 'Appareils Utilisateur',
+            'category': 'User Devices',
             'price_france': Decimal('0.00'),
             'price_morocco': Decimal('0.00'),
             'unit': 'unit'
@@ -184,7 +228,7 @@ def create_materials(categories):
         {
             'name': 'Desktop - Tech',
             'description': 'Technical Desktop',
-            'category': 'Appareils Utilisateur',
+            'category': 'User Devices',
             'price_france': Decimal('0.00'),
             'price_morocco': Decimal('0.00'),
             'unit': 'unit'
@@ -192,7 +236,7 @@ def create_materials(categories):
         {
             'name': 'Printer',
             'description': 'Office Printer',
-            'category': 'Appareils Utilisateur',
+            'category': 'User Devices',
             'price_france': Decimal('0.00'),
             'price_morocco': Decimal('0.00'),
             'unit': 'unit'
@@ -200,17 +244,25 @@ def create_materials(categories):
         {
             'name': 'Traceau',
             'description': 'Plotter/Tracer',
-            'category': 'Appareils Utilisateur',
+            'category': 'User Devices',
             'price_france': Decimal('0.00'),
             'price_morocco': Decimal('0.00'),
             'unit': 'unit'
         },
+        {
+            'name': 'Traceur A0',
+            'description': 'Large format A0 plotter',
+            'category': 'User Devices',
+            'price_france': Decimal('1200.00'),
+            'price_morocco': Decimal('12000.00'),
+            'unit': 'unit'
+        },
         
-        # Licences Logicielles
+        # Software Licenses
         {
             'name': 'Windows Client License (Windows Pro)',
             'description': 'Windows Pro Client License',
-            'category': 'Licences Logicielles',
+            'category': 'Software Licenses',
             'price_france': Decimal('0.00'),
             'price_morocco': Decimal('0.00'),
             'unit': 'license'
@@ -218,7 +270,7 @@ def create_materials(categories):
         {
             'name': 'Windows Server License',
             'description': 'Windows Server License',
-            'category': 'Licences Logicielles',
+            'category': 'Software Licenses',
             'price_france': Decimal('0.00'),
             'price_morocco': Decimal('0.00'),
             'unit': 'license'
@@ -235,13 +287,21 @@ def create_materials(categories):
             'is_service': True
         },
         
-        # Visioconférence
+        # Videoconferencing
         {
             'name': 'Visio endpoint',
             'description': 'Videoconferencing Endpoint',
-            'category': 'Visioconférence',
+            'category': 'Videoconferencing',
             'price_france': Decimal('0.00'),
             'price_morocco': Decimal('0.00'),
+            'unit': 'unit'
+        },
+        {
+            'name': 'Standard visio system',
+            'description': 'Standard video conferencing system',
+            'category': 'Videoconferencing',
+            'price_france': Decimal('1500.00'),
+            'price_morocco': Decimal('15000.00'),
             'unit': 'unit'
         },
         
@@ -321,6 +381,81 @@ def create_materials(categories):
             'conditions': {'min_users': 201}
         }
     ]
+
+    # Additional aliases required by calculation engine expectations
+    materials_data.extend([
+        {
+            'name': 'DAC Cable',
+            'description': 'Direct Attach Copper Cable',
+            'category': 'Network Equipment',
+            'price_france': Decimal('100.00'),
+            'price_morocco': Decimal('1000.00'),
+            'unit': 'unit'
+        },
+        {
+            'name': 'Tranceiver RJ45',
+            'description': 'RJ45 Transceiver',
+            'category': 'Network Equipment',
+            'price_france': Decimal('80.00'),
+            'price_morocco': Decimal('800.00'),
+            'unit': 'unit'
+        },
+        # Internet service name patterns used by calculator
+        {
+            'name': 'Fiber Optic 100MBps',
+            'description': 'Fiber optic internet 100MBps',
+            'category': 'Services',
+            'price_france': Decimal('200.00'),
+            'price_morocco': Decimal('2000.00'),
+            'unit': 'month',
+            'is_service': True
+        },
+        {
+            'name': 'Fiber Optic 200MBps',
+            'description': 'Fiber optic internet 200MBps',
+            'category': 'Services',
+            'price_france': Decimal('350.00'),
+            'price_morocco': Decimal('3500.00'),
+            'unit': 'month',
+            'is_service': True
+        },
+        {
+            'name': 'Fiber Optic 500MBps',
+            'description': 'Fiber optic internet 500MBps',
+            'category': 'Services',
+            'price_france': Decimal('600.00'),
+            'price_morocco': Decimal('6000.00'),
+            'unit': 'month',
+            'is_service': True
+        },
+        {
+            'name': 'Fiber Optic 1GBps',
+            'description': 'Fiber optic internet 1GBps',
+            'category': 'Services',
+            'price_france': Decimal('1000.00'),
+            'price_morocco': Decimal('10000.00'),
+            'unit': 'month',
+            'is_service': True
+        },
+        {
+            'name': 'STARLINK 100MBps',
+            'description': 'Starlink internet 100MBps',
+            'category': 'Services',
+            'price_france': Decimal('200.00'),
+            'price_morocco': Decimal('2000.00'),
+            'unit': 'month',
+            'is_service': True
+        },
+        {
+            'name': 'VSAT 100MBps',
+            'description': 'VSAT internet 100MBps',
+            'category': 'Services',
+            'price_france': Decimal('300.00'),
+            'price_morocco': Decimal('3000.00'),
+            'unit': 'month',
+            'is_service': True
+        },
+    ])
     
     created_materials = []
     for mat_data in materials_data:

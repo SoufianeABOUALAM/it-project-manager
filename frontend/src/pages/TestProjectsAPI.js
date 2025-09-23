@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, Button, Text, VStack, HStack, Code, Alert, AlertIcon } from '@chakra-ui/react';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
