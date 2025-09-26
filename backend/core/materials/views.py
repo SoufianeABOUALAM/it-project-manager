@@ -302,25 +302,29 @@ class MaterialSetupRequiredView(APIView):
     
     def post(self, request):
         """Setup all required materials for the project form"""
-        try:
-            # Import the setup function
-            import sys
-            import os
-            sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            from setup_missing_materials import add_missing_materials
-            
-            # Run the setup
-            add_missing_materials()
-            
-            return Response({
-                'message': 'Required materials setup completed successfully',
-                'total_materials': Material.objects.count()
-            })
-        except Exception as e:
-            return Response(
-                {'error': f'Error setting up required materials: {str(e)}'}, 
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        # try:
+        #     # Import the setup function
+        #     import sys
+        #     import os
+        #     sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        #     from setup_missing_materials import add_missing_materials
+        #     
+        #     # Run the setup
+        #     add_missing_materials()
+        #     
+        #     return Response({
+        #         'message': 'Required materials setup completed successfully',
+        #         'total_materials': Material.objects.count()
+        #     })
+        # except Exception as e:
+        #     return Response(
+        #         {'error': f'Error setting up required materials: {str(e)}'}, 
+        #         status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        #     )
+        return Response({
+            'message': 'Materials setup disabled - materials already configured',
+            'total_materials': Material.objects.count()
+        })
 
 
 # Additional functions for custom material system
@@ -366,7 +370,6 @@ def add_custom_material(request):
             unit=data.get('unit', 'unit'),
             is_auto_calculated=False,  # Custom materials are not auto-calculated
             is_service=data.get('is_service', False),
-            created_by=request.user,
             # Smart calculation fields
             calculation_type=data.get('calculation_type', 'FIXED'),
             multiplier=data.get('multiplier', 1.0),
@@ -378,6 +381,87 @@ def add_custom_material(request):
         serializer = MaterialSerializer(material)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
         
+    except Exception as e:
+        return Response(
+            {'error': str(e)}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated, IsAdminOrSuperAdmin])
+def delete_custom_material(request, material_id):
+    """Delete a custom material (only non-static materials)"""
+    try:
+        material = Material.objects.get(id=material_id)
+        
+        # Check if material is static (auto-calculated) - don't allow deletion
+        if material.is_auto_calculated:
+            return Response(
+                {'error': 'Cannot delete static/auto-calculated materials'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if material is used in any projects and handle cascading deletion
+        from calculations.models import ProjectItem
+        from projects.models import Project
+        
+        project_items = ProjectItem.objects.filter(material=material).select_related('project')
+        affected_projects = []
+        
+        if project_items.exists():
+            # Get project names that use this material
+            project_names = [item.project.name for item in project_items]
+            project_count = len(project_names)
+            
+            # Delete all project items that use this material
+            deleted_items_count = project_items.count()
+            project_items.delete()
+            
+            # Recalculate budgets for affected projects
+            from calculations.services import ProjectCalculator
+            calculator = ProjectCalculator()
+            
+            for project in Project.objects.filter(items__material=material).distinct():
+                try:
+                    calculator.save_project_budget(project)
+                    affected_projects.append(project.name)
+                except Exception as e:
+                    # Log error but continue with deletion
+                    print(f"Error recalculating budget for project {project.name}: {str(e)}")
+            
+            # Prepare success message with cascade information
+            if project_count == 1:
+                cascade_msg = f'Material was also removed from project "{project_names[0]}" and its budget was recalculated.'
+            else:
+                project_list = ', '.join(f'"{name}"' for name in project_names[:3])
+                if project_count > 3:
+                    project_list += f' and {project_count - 3} other project(s)'
+                cascade_msg = f'Material was also removed from {project_count} projects: {project_list} and their budgets were recalculated.'
+        else:
+            cascade_msg = ''
+        
+        material_name = material.name
+        material.delete()
+        
+        # Prepare success message
+        success_message = f'Material "{material_name}" has been deleted successfully'
+        if cascade_msg:
+            success_message += f' {cascade_msg}'
+        
+        return Response({
+            'message': success_message,
+            'cascade_info': {
+                'affected_projects': affected_projects,
+                'deleted_items_count': deleted_items_count if 'deleted_items_count' in locals() else 0
+            }
+        }, status=status.HTTP_200_OK)
+        
+    except Material.DoesNotExist:
+        return Response(
+            {'error': 'Material not found'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
     except Exception as e:
         return Response(
             {'error': str(e)}, 
@@ -408,6 +492,69 @@ def recalculate_project_budget(request, project_id):
             {'error': 'Project not found'}, 
             status=status.HTTP_404_NOT_FOUND
         )
+    except Exception as e:
+        return Response(
+            {'error': str(e)}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def setup_default_materials(request):
+    """Create default materials and categories if they don't exist"""
+    try:
+        from calculations.services import MaterialManager
+        
+        print("Setting up default materials...")
+        
+        # Create default categories
+        MaterialManager.create_default_categories()
+        print("Default categories created")
+        
+        # Create default materials
+        MaterialManager.create_default_materials()
+        print("Default materials created")
+        
+        # Count created items
+        total_categories = Category.objects.count()
+        total_materials = Material.objects.count()
+        
+        print(f"Total categories: {total_categories}, Total materials: {total_materials}")
+        
+        return Response({
+            'message': 'Default materials and categories created successfully',
+            'total_categories': total_categories,
+            'total_materials': total_materials
+        })
+        
+    except Exception as e:
+        print(f"Error in setup_default_materials: {str(e)}")
+        return Response(
+            {'error': f'Failed to setup default materials: {str(e)}'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def check_materials_status(request):
+    """Check if materials and categories exist in database"""
+    try:
+        total_categories = Category.objects.count()
+        total_materials = Material.objects.count()
+        
+        categories = list(Category.objects.values_list('name', flat=True))
+        materials = list(Material.objects.values_list('name', flat=True))
+        
+        return Response({
+            'total_categories': total_categories,
+            'total_materials': total_materials,
+            'categories': categories,
+            'materials': materials[:10],  # First 10 materials
+            'status': 'ok' if total_materials > 0 else 'empty'
+        })
+        
     except Exception as e:
         return Response(
             {'error': str(e)}, 

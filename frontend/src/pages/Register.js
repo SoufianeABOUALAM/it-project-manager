@@ -20,12 +20,10 @@ import {
 import { MdOutlineRemoveRedEye } from 'react-icons/md';
 import { RiEyeCloseLine } from 'react-icons/ri';
 import { FaChevronLeft } from 'react-icons/fa';
-import { FcGoogle } from 'react-icons/fc';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 // Custom components
 import { HSeparator } from '../components/separator/Separator';
-import FixedPlugin from '../components/fixedPlugin/FixedPlugin';
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -46,16 +44,6 @@ const Register = () => {
     const textColorDetails = useColorModeValue("navy.700", "secondaryGray.600");
     const textColorBrand = useColorModeValue("brand.500", "white");
     const brandStars = useColorModeValue("brand.500", "brand.400");
-    const googleBg = useColorModeValue("white", "whiteAlpha.200");
-    const googleText = useColorModeValue("navy.700", "white");
-    const googleHover = useColorModeValue(
-        { bg: "gray.100" },
-        { bg: "whiteAlpha.300" }
-    );
-    const googleActive = useColorModeValue(
-        { bg: "gray.200" },
-        { bg: "whiteAlpha.200" }
-    );
 
     const handleClick = () => setShow(!show);
     const handleClick2 = () => setShow2(!show2);
@@ -80,7 +68,7 @@ const Register = () => {
             await registerUser(formData.username, formData.email, formData.password, formData.password2);
             navigate('/');
         } catch (err) {
-            console.log("Registration error:", err.response?.data);
+            // Registration error - no sensitive data logged
             if (err.response?.data) {
                 // Handle validation errors - show only the actual error messages
                 const errors = err.response.data;
@@ -171,34 +159,6 @@ const Register = () => {
                         {/* Form */}
                             <Box as="form" onSubmit={handleSubmit}>
                             
-                            {/* Google Sign In Button */}
-                            <Button
-                                fontSize='sm'
-                                me='0px'
-                                mb='26px'
-                                py='15px'
-                                h='50px'
-                                borderRadius='16px'
-                                bg={googleBg}
-                                color={googleText}
-                                fontWeight='500'
-                                border='1px solid'
-                                borderColor='secondaryGray.100'
-                                _hover={googleHover}
-                                _active={googleActive}
-                                _focus={googleActive}
-                                w='100%'>
-                                <Icon as={FcGoogle} w='20px' h='20px' me='10px' />
-                                Sign up with Google
-                            </Button>
-                            
-                            <Flex align='center' mb='25px'>
-                                <HSeparator />
-                                <Text color='gray.400' mx='14px'>
-                                    or
-                                </Text>
-                                <HSeparator />
-                            </Flex>
                             
                             <FormControl>
                                 <FormLabel
@@ -628,7 +588,6 @@ const Register = () => {
                     </Flex>
                 </Box>
             </Flex>
-            <FixedPlugin />
         </Flex>
     );
 };

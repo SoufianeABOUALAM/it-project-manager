@@ -10,62 +10,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Fix description field defaults for all equipment tables
-        migrations.RunSQL(
-            "ALTER TABLE projects_networkequipment MODIFY COLUMN description TEXT DEFAULT NULL",
-            reverse_sql="ALTER TABLE projects_networkequipment MODIFY COLUMN description TEXT",
-        ),
-        migrations.RunSQL(
-            "ALTER TABLE projects_serverequipment MODIFY COLUMN description TEXT DEFAULT NULL",
-            reverse_sql="ALTER TABLE projects_serverequipment MODIFY COLUMN description TEXT",
-        ),
-        migrations.RunSQL(
-            "ALTER TABLE projects_userdevice MODIFY COLUMN description TEXT DEFAULT NULL",
-            reverse_sql="ALTER TABLE projects_userdevice MODIFY COLUMN description TEXT",
-        ),
-        migrations.RunSQL(
-            "ALTER TABLE projects_softwarelicense MODIFY COLUMN description TEXT DEFAULT NULL",
-            reverse_sql="ALTER TABLE projects_softwarelicense MODIFY COLUMN description TEXT",
-        ),
-        migrations.RunSQL(
-            "ALTER TABLE projects_service MODIFY COLUMN description TEXT DEFAULT NULL",
-            reverse_sql="ALTER TABLE projects_service MODIFY COLUMN description TEXT",
-        ),
-        migrations.RunSQL(
-            "ALTER TABLE projects_visioequipment MODIFY COLUMN description TEXT DEFAULT NULL",
-            reverse_sql="ALTER TABLE projects_visioequipment MODIFY COLUMN description TEXT",
-        ),
-        migrations.RunSQL(
-            "ALTER TABLE projects_infrastructureequipment MODIFY COLUMN description TEXT DEFAULT NULL",
-            reverse_sql="ALTER TABLE projects_infrastructureequipment MODIFY COLUMN description TEXT",
-        ),
-        # Fix supplier field defaults
-        migrations.RunSQL(
-            "ALTER TABLE projects_networkequipment MODIFY COLUMN supplier VARCHAR(255) DEFAULT NULL",
-            reverse_sql="ALTER TABLE projects_networkequipment MODIFY COLUMN supplier VARCHAR(255)",
-        ),
-        migrations.RunSQL(
-            "ALTER TABLE projects_serverequipment MODIFY COLUMN supplier VARCHAR(255) DEFAULT NULL",
-            reverse_sql="ALTER TABLE projects_serverequipment MODIFY COLUMN supplier VARCHAR(255)",
-        ),
-        migrations.RunSQL(
-            "ALTER TABLE projects_userdevice MODIFY COLUMN supplier VARCHAR(255) DEFAULT NULL",
-            reverse_sql="ALTER TABLE projects_userdevice MODIFY COLUMN supplier VARCHAR(255)",
-        ),
-        migrations.RunSQL(
-            "ALTER TABLE projects_softwarelicense MODIFY COLUMN supplier VARCHAR(255) DEFAULT NULL",
-            reverse_sql="ALTER TABLE projects_softwarelicense MODIFY COLUMN supplier VARCHAR(255)",
-        ),
-        migrations.RunSQL(
-            "ALTER TABLE projects_service MODIFY COLUMN supplier VARCHAR(255) DEFAULT NULL",
-            reverse_sql="ALTER TABLE projects_service MODIFY COLUMN supplier VARCHAR(255)",
-        ),
-        migrations.RunSQL(
-            "ALTER TABLE projects_visioequipment MODIFY COLUMN supplier VARCHAR(255) DEFAULT NULL",
-            reverse_sql="ALTER TABLE projects_visioequipment MODIFY COLUMN supplier VARCHAR(255)",
-        ),
-        migrations.RunSQL(
-            "ALTER TABLE projects_infrastructureequipment MODIFY COLUMN supplier VARCHAR(255) DEFAULT NULL",
-            reverse_sql="ALTER TABLE projects_infrastructureequipment MODIFY COLUMN supplier VARCHAR(255)",
-        ),
+        # SQLite doesn't support MODIFY COLUMN, so this migration is empty
+        # The fields will be created with proper defaults in the model definitions
     ]

@@ -95,6 +95,7 @@ import {
   MdNetworkCheck,
   MdSettings,
   MdVideocam,
+  MdVideoCall,
   MdPrint,
   MdCable,
   MdMemory,
@@ -182,12 +183,10 @@ const AdminProjectsDashboard = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
 
   useEffect(() => {
-    console.log('AdminProjectsDashboard useEffect - user:', user);
-    console.log('AdminProjectsDashboard useEffect - authToken:', authToken);
+    // AdminProjectsDashboard component loaded
     
     if (user && authToken) {
-      console.log('User is_admin:', user.is_admin);
-      console.log('User role:', user.role);
+      // User authentication verified
       fetchProjects();
     } else {
       setError('Access denied. Admin privileges required.');
@@ -210,13 +209,13 @@ const AdminProjectsDashboard = () => {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      console.log('Fetching projects from:', `${API_URL}projects/projects/`);
+      // Fetching projects data
       
       const response = await axios.get(`${API_URL}projects/projects/`, {
         headers: { Authorization: `Token ${authToken}` }
       });
       
-      console.log('Projects API response:', response.data);
+      // Projects data received
       
       // Handle both paginated and non-paginated responses
       let projectsData = [];
@@ -227,17 +226,16 @@ const AdminProjectsDashboard = () => {
         // Direct array response
         projectsData = response.data;
       } else {
-        console.warn('Unexpected response format:', response.data);
+        // Unexpected response format
         projectsData = [];
       }
       
-      console.log('Processed projects data:', projectsData);
+      // Projects data processed
       setProjects(projectsData);
-      calculateStats(projectsData);
+      await calculateStats(projectsData);
       setError(null);
     } catch (error) {
-      console.error('Failed to fetch projects:', error);
-      console.error('Error details:', error.response?.data);
+      // Failed to fetch projects
       setError(`Failed to load projects: ${error.response?.data?.detail || error.message}`);
       toast({
         title: 'Error',
@@ -256,16 +254,16 @@ const AdminProjectsDashboard = () => {
     
     try {
       setLoadingFinancialDetails(true);
-      console.log('Fetching financial details for project:', projectId);
+      // Fetching financial details
       
       const response = await axios.get(`${API_URL}projects/projects/${projectId}/financial-details/`, {
         headers: { Authorization: `Token ${authToken}` }
       });
       
-      console.log('Financial details API response:', response.data);
+      // Financial details received
       setFinancialDetails(response.data);
     } catch (error) {
-      console.error('Failed to fetch financial details:', error);
+      // Failed to fetch financial details
       toast({
         title: 'Warning',
         description: `Failed to load financial details: ${error.response?.data?.detail || error.message}`,
@@ -278,10 +276,9 @@ const AdminProjectsDashboard = () => {
     }
   };
 
-  const calculateStats = (projectsData) => {
+  const calculateStats = async (projectsData) => {
     const totalProjects = projectsData.length;
     const totalUsers = projectsData.reduce((sum, project) => sum + (project.number_of_users || 0), 0);
-    const totalBudget = projectsData.reduce((sum, project) => sum + (project.total_cost_france || 0), 0);
     const activeProjects = projectsData.filter(p => p.status === 'active' || !p.status).length;
     const recentProjects = projectsData.filter(p => {
       const createdDate = new Date(p.created_at);
@@ -289,6 +286,19 @@ const AdminProjectsDashboard = () => {
       weekAgo.setDate(weekAgo.getDate() - 7);
       return createdDate > weekAgo;
     }).length;
+
+    // Get total budget from dashboard stats API (same as backend calculation)
+    let totalBudget = 0;
+    try {
+      const dashboardResponse = await axios.get(`${API_URL}dashboard/stats/`, {
+        headers: { Authorization: `Token ${authToken}` }
+      });
+      totalBudget = dashboardResponse.data.financial?.total_cost_france || 0;
+    } catch (error) {
+      console.warn('Failed to fetch dashboard stats, using project sum:', error);
+      // Fallback to project sum if dashboard stats fail
+      totalBudget = projectsData.reduce((sum, project) => sum + (parseFloat(project.total_cost_france) || 0), 0);
+    }
 
     setStats({
       totalProjects,
@@ -307,7 +317,7 @@ const AdminProjectsDashboard = () => {
       filtered = filtered.filter(project =>
         project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         project.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.created_by?.username?.toLowerCase().includes(searchTerm.toLowerCase())
+        project.created_by_username?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -342,43 +352,33 @@ const AdminProjectsDashboard = () => {
   };
 
   const handleViewProject = async (project) => {
-    console.log('=== handleViewProject called ===');
-    console.log('Project ID:', project.id);
-    console.log('Selected project data:', project);
-    console.log('Created by from list:', project.created_by);
-    console.log('Created at from list:', project.created_at);
-    console.log('Updated at from list:', project.updated_at);
-    console.log('API URL:', API_URL);
-    console.log('Auth token exists:', !!authToken);
+    // Viewing project details
+    // Authentication verified
     
     try {
       // Fetch detailed project data
       const url = `${API_URL}projects/projects/${project.id}/`;
-      console.log('Fetching from URL:', url);
+      // Fetching project details
       
       const response = await axios.get(url, {
         headers: { Authorization: `Token ${authToken}` }
       });
       
-      console.log('API Response Status:', response.status);
-      console.log('Detailed project data:', response.data);
-      console.log('Created by from API:', response.data.created_by);
-      console.log('Updated at from API:', response.data.updated_at);
+      // Project details received
+      // Project data processed
       
       setSelectedProject(response.data);
       setEditFormData(response.data);
-      console.log('Set selectedProject to:', response.data);
+      // Project selection updated
       
       // Fetch financial details for the selected project
       fetchFinancialDetails(response.data.id);
     } catch (error) {
-      console.error('Error fetching project details:', error);
-      console.error('Error response:', error.response);
-      console.error('Error status:', error.response?.status);
-      console.error('Error data:', error.response?.data);
+      // Error fetching project details
+      // Error details logged
       
       // Fallback to list data if detail fetch fails
-      console.log('Falling back to list data');
+      // Falling back to list data
     setSelectedProject(project);
       setEditFormData(project);
     }
@@ -437,12 +437,11 @@ const AdminProjectsDashboard = () => {
 
   const handleUpdateProject = async () => {
     if (!selectedProject || !authToken) {
-      console.error('Missing project or auth token:', { selectedProject: !!selectedProject, authToken: !!authToken });
+      // Missing project or auth token
       return;
     }
     
-    console.log('Updating project:', selectedProject.id);
-    console.log('Auth token:', authToken);
+    // Updating project
     console.log('Form data:', editFormData);
     
     setIsUpdating(true);
@@ -511,7 +510,7 @@ const AdminProjectsDashboard = () => {
 
   const confirmDeleteProject = async () => {
     if (!projectToDelete || !authToken) {
-      console.error('Missing project or auth token');
+      // Missing project or auth token
       return;
     }
 
@@ -698,7 +697,7 @@ const AdminProjectsDashboard = () => {
       // First create the project with basic info
       console.log('Creating project with basic info...');
       console.log('POST URL:', `${API_URL}projects/projects/`);
-      console.log('Auth token:', authToken);
+      // Authentication verified
       
       let createResponse;
       try {
@@ -780,17 +779,23 @@ const AdminProjectsDashboard = () => {
     }
   };
 
-  const handleExportProject = async (projectId) => {
+  const handleExportProject = async (project) => {
     try {
-      const response = await axios.get(`${API_URL}projects/projects/${projectId}/export-excel/`, {
+      const response = await axios.get(`${API_URL}projects/projects/${project.id}/export-excel/`, {
         headers: { Authorization: `Token ${authToken}` },
         responseType: 'blob'
       });
       
+      // Create a safe filename from the project name
+      const safeProjectName = project.name
+        .replace(/[^a-zA-Z0-9\s-_]/g, '') // Remove special characters
+        .replace(/\s+/g, '_') // Replace spaces with underscores
+        .toLowerCase();
+      
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `project_${projectId}_budget.xlsx`);
+      link.setAttribute('download', `${safeProjectName}_budget.xlsx`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -814,8 +819,58 @@ const AdminProjectsDashboard = () => {
     }
   };
 
+  const handleRecalculateAllBudgets = async () => {
+    try {
+      // First, check materials status
+      const statusResponse = await axios.get(`${API_URL}materials/check-materials-status/`, {
+        headers: { Authorization: `Token ${authToken}` }
+      });
+      
+      console.log('Materials status:', statusResponse.data);
+      
+      // Setup default materials if needed
+      if (statusResponse.data.status === 'empty') {
+        console.log('Setting up default materials...');
+        await axios.post(`${API_URL}materials/setup-default-materials/`, {}, {
+          headers: { Authorization: `Token ${authToken}` }
+        });
+      }
+      
+      // Then recalculate all project budgets
+      const response = await axios.post(`${API_URL}projects/projects/recalculate-all/`, {}, {
+        headers: { Authorization: `Token ${authToken}` }
+      });
+      
+      console.log('Recalculate response:', response.data);
+      
+      toast({
+        title: 'Success',
+        description: response.data.message,
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      });
+      
+      // Refresh the projects data
+      await fetchProjects();
+      
+    } catch (error) {
+      console.error('Failed to recalculate budgets:', error);
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to recalculate budgets';
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        status: 'error',
+        duration: 8000,
+        isClosable: true,
+      });
+    }
+  };
+
   const formatCurrency = (amount, currency = 'EUR') => {
-    if (!amount) return 'N/A';
+    if (amount === null || amount === undefined || isNaN(amount) || amount === '') {
+      return '0,00 €';
+    }
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: currency
@@ -1186,7 +1241,10 @@ const AdminProjectsDashboard = () => {
                           boxShadow="0 8px 32px rgba(0,0,0,0.15)"
                         >
                           <MenuItem 
-                            onClick={() => handleExportProject(project.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleExportProject(project);
+                            }}
                             _hover={{
                               bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
                               color: 'white',
@@ -1432,7 +1490,7 @@ const AdminProjectsDashboard = () => {
                               <Icon as={MdPerson} color="white" w={3} h={3} />
                             </Box>
                             <Text fontSize="sm" color="gray.600" fontWeight="500">
-                            Created by: {project.created_by?.username || 'Unknown'}
+                            Created by: {project.created_by_username || 'Unknown'}
                           </Text>
                           </HStack>
                           <HStack spacing={2} align="center">
@@ -1614,7 +1672,7 @@ const AdminProjectsDashboard = () => {
                             {project.name}
                           </Heading>
                           <Text fontSize="sm" color="gray.500">
-                            {project.company_name || 'No company'} • Created by {project.created_by?.username || 'Unknown'}
+                            {project.company_name || 'No company'} • Created by {project.created_by_username || 'Unknown'}
                           </Text>
                           <HStack spacing={2} flexWrap="wrap" maxW="100%">
                             <Tag colorScheme={getProjectStatusColor(project.status)} size="sm" maxW="120px">
@@ -1824,7 +1882,7 @@ const AdminProjectsDashboard = () => {
                       <Td py={4} px={2}>
                         <HStack spacing={2}>
                           <Avatar
-                            name={project.created_by?.username}
+                            name={project.created_by_username}
                             size="sm"
                             bgGradient="linear(to-br, #FF6B35 0%, #20B2AA 100%)"
                             boxShadow="0 4px 15px rgba(255, 107, 53, 0.3)"
@@ -1835,7 +1893,7 @@ const AdminProjectsDashboard = () => {
                             color="gray.700"
                             noOfLines={1}
                           >
-                            {project.created_by?.username || 'Unknown'}
+                            {project.created_by_username || 'Unknown'}
                           </Text>
                         </HStack>
                       </Td>
@@ -1934,7 +1992,10 @@ const AdminProjectsDashboard = () => {
                               boxShadow: '0 8px 25px rgba(32, 178, 170, 0.4)',
                             }}
                             transition="all 0.3s ease"
-                            onClick={() => handleExportProject(project.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleExportProject(project);
+                            }}
                             aria-label="Export project"
                           />
                         </HStack>
@@ -2441,43 +2502,66 @@ const AdminProjectsDashboard = () => {
                                     Project Details
                                   </Text>
                                   <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-                                    <Box>
-                                      <Text fontSize="sm" fontWeight="500" color="gray.700" mb={2}>
-                                        Status
-                                      </Text>
-                                      <Select
-                                        value={editFormData.status || 'draft'}
-                                        onChange={(e) => handleEditFormChange('status', e.target.value)}
-                                        size="md"
-                                        bg="white"
-                                        borderColor="gray.300"
-                                        _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 1px #3182ce" }}
-                                      >
-                                        <option value="draft">Draft</option>
-                                        <option value="submitted">Submitted</option>
-                                        <option value="approved">Approved</option>
-                                        <option value="in_progress">In Progress</option>
-                                        <option value="completed">Completed</option>
-                                      </Select>
-                                    </Box>
-                                    <Box>
-                                      <Text fontSize="sm" fontWeight="500" color="gray.700" mb={2}>
-                                        Priority
-                                      </Text>
-                                      <Select
-                                        value={editFormData.priority || 'medium'}
-                                        onChange={(e) => handleEditFormChange('priority', e.target.value)}
-                                        size="md"
-                                        bg="white"
-                                        borderColor="gray.300"
-                                        _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 1px #3182ce" }}
-                                      >
-                                        <option value="low">Low</option>
-                                        <option value="medium">Medium</option>
-                                        <option value="high">High</option>
-                                        <option value="urgent">Urgent</option>
-                                      </Select>
-                                    </Box>
+                                    {(user?.role === 'admin' || user?.role === 'super_admin' || user?.is_staff) ? (
+                                      <>
+                                        <Box>
+                                          <Text fontSize="sm" fontWeight="500" color="gray.700" mb={2}>
+                                            Status
+                                          </Text>
+                                          <Select
+                                            value={editFormData.status || 'draft'}
+                                            onChange={(e) => handleEditFormChange('status', e.target.value)}
+                                            size="md"
+                                            bg="white"
+                                            borderColor="gray.300"
+                                            _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 1px #3182ce" }}
+                                          >
+                                            <option value="draft">Draft</option>
+                                            <option value="submitted">Submitted</option>
+                                            <option value="approved">Approved</option>
+                                            <option value="in_progress">In Progress</option>
+                                            <option value="completed">Completed</option>
+                                          </Select>
+                                        </Box>
+                                        <Box>
+                                          <Text fontSize="sm" fontWeight="500" color="gray.700" mb={2}>
+                                            Priority
+                                          </Text>
+                                          <Select
+                                            value={editFormData.priority || 'medium'}
+                                            onChange={(e) => handleEditFormChange('priority', e.target.value)}
+                                            size="md"
+                                            bg="white"
+                                            borderColor="gray.300"
+                                            _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 1px #3182ce" }}
+                                          >
+                                            <option value="low">Low</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="high">High</option>
+                                            <option value="urgent">Urgent</option>
+                                          </Select>
+                                        </Box>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Box>
+                                          <Text fontSize="sm" fontWeight="500" color="gray.700" mb={2}>
+                                            Status
+                                          </Text>
+                                          <Text fontSize="sm" color="gray.600" p={2} bg="gray.50" borderRadius="md">
+                                            {editFormData.status || 'draft'}
+                                          </Text>
+                                        </Box>
+                                        <Box>
+                                          <Text fontSize="sm" fontWeight="500" color="gray.700" mb={2}>
+                                            Priority
+                                          </Text>
+                                          <Text fontSize="sm" color="gray.600" p={2} bg="gray.50" borderRadius="md">
+                                            {editFormData.priority || 'medium'}
+                                          </Text>
+                                        </Box>
+                                      </>
+                                    )}
                                     <Box>
                                       <Text fontSize="sm" fontWeight="500" color="gray.700" mb={2}>
                                         Progress (%)
@@ -2941,13 +3025,9 @@ const AdminProjectsDashboard = () => {
                               </HStack>
                             </CardHeader>
                             <CardBody pt={0}>
-                              {console.log('=== RENDERING PROJECT CREATOR ===')}
-                              {console.log('selectedProject:', selectedProject)}
-                              {console.log('selectedProject.created_by:', selectedProject.created_by)}
-                              {console.log('selectedProject.created_at:', selectedProject.created_at)}
                               <HStack spacing={4} p={4} bg="rgba(255, 107, 53, 0.05)" borderRadius="xl">
                                 <Avatar
-                                  name={selectedProject.created_by?.username}
+                                  name={selectedProject.created_by_username}
                                   size="xl"
                                   bgGradient="linear(to-br, #FF6B35 0%, #20B2AA 100%)"
                                   boxShadow="0 8px 25px rgba(255, 107, 53, 0.3)"
@@ -2955,7 +3035,7 @@ const AdminProjectsDashboard = () => {
                                 />
                                 <VStack align="start" spacing={2} flex={1}>
                                   <Text fontSize="lg" fontWeight="bold" color={textColor}>
-                                    {selectedProject.created_by?.username || 'Unknown'}
+                                    {selectedProject.created_by_username || 'Unknown'}
                                   </Text>
                                   <Text fontSize="sm" color="gray.600" fontWeight="medium">
                                     📧 {selectedProject.created_by?.email || 'No email'}
@@ -3324,9 +3404,31 @@ const AdminProjectsDashboard = () => {
                                             <Text>Infrastructure Equipment</Text>
                                           </HStack>
                                         </Td>
-                                        <Td isNumeric>{formatCurrency(financialDetails?.breakdown?.infrastructure_equipment?.france || 0, 'EUR')}</Td>
-                                        <Td isNumeric>{formatCurrency(financialDetails?.breakdown?.infrastructure_equipment?.morocco || 0, 'MAD')}</Td>
-                                        <Td isNumeric>{financialDetails?.breakdown?.infrastructure_equipment?.items || 0}</Td>
+                                        <Td isNumeric>{formatCurrency(financialDetails?.breakdown?.infrastructure?.france || 0, 'EUR')}</Td>
+                                        <Td isNumeric>{formatCurrency(financialDetails?.breakdown?.infrastructure?.morocco || 0, 'MAD')}</Td>
+                                        <Td isNumeric>{financialDetails?.breakdown?.infrastructure?.items || 0}</Td>
+                                      </Tr>
+                                      <Tr>
+                                        <Td>
+                                          <HStack spacing={2}>
+                                            <Icon as={MdBusiness} w="16px" h="16px" color="cyan.500" />
+                                            <Text>BYCN IT Costs</Text>
+                                          </HStack>
+                                        </Td>
+                                        <Td isNumeric>{formatCurrency(financialDetails?.breakdown?.bycn_it_costs?.france || 0, 'EUR')}</Td>
+                                        <Td isNumeric>{formatCurrency(financialDetails?.breakdown?.bycn_it_costs?.morocco || 0, 'MAD')}</Td>
+                                        <Td isNumeric>{financialDetails?.breakdown?.bycn_it_costs?.items || 0}</Td>
+                                      </Tr>
+                                      <Tr>
+                                        <Td>
+                                          <HStack spacing={2}>
+                                            <Icon as={MdVideoCall} w="16px" h="16px" color="pink.500" />
+                                            <Text>Visio Conference</Text>
+                                          </HStack>
+                                        </Td>
+                                        <Td isNumeric>{formatCurrency(financialDetails?.breakdown?.visio_conference?.france || 0, 'EUR')}</Td>
+                                        <Td isNumeric>{formatCurrency(financialDetails?.breakdown?.visio_conference?.morocco || 0, 'MAD')}</Td>
+                                        <Td isNumeric>{financialDetails?.breakdown?.visio_conference?.items || 0}</Td>
                                       </Tr>
                                     </>
                                   )}
@@ -4308,9 +4410,9 @@ const AdminProjectsDashboard = () => {
                         transition="all 0.3s ease"
                       >
                         <option value="100MBps">100MBps</option>
-                        <option value="200MB">200MB</option>
-                        <option value="500MB">500MB</option>
-                        <option value="1GB">1GB</option>
+                        <option value="200MBps">200MBps</option>
+                        <option value="500MBps">500MBps</option>
+                        <option value="1GBps">1GBps</option>
                       </Select>
                     </Box>
                   </HStack>
@@ -4369,7 +4471,7 @@ const AdminProjectsDashboard = () => {
                     </Box>
                     <Box>
                       <Text fontSize="xs" color="gray.600" mb={2} fontWeight="500">
-                        📐 Number of Traceau
+                        📐 Number of Traceur A0
                       </Text>
                       <Input
                         id="num-traceau"

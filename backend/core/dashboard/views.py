@@ -10,7 +10,8 @@ from decimal import Decimal
 import json
 
 from accounts.models import User
-from projects.models import Project, ProjectNetworkItem, ProjectServerItem, ProjectUserDeviceItem, ProjectInfrastructureItem, ProjectVisioItem
+from projects.models import Project
+from calculations.models import ProjectItem
 from materials.models import Material, Category
 from calculations.models import ProjectItem
 from .models import DashboardCache
@@ -69,20 +70,10 @@ class DashboardStatsView(APIView):
             active_users = User.objects.filter(is_active=True).count()
             admin_users = User.objects.filter(role__in=['admin', 'super_admin']).count()
             
-            # Project Statistics (using date fields instead of status)
-            today = timezone.now().date()
-            
-            # Active projects: have start_date and no end_date, or end_date is in the future
-            active_projects = Project.objects.filter(
-                models.Q(start_date__lte=today) & 
-                (models.Q(end_date__isnull=True) | models.Q(end_date__gte=today))
-            ).count()
-            
-            # Completed projects: have end_date in the past
-            completed_projects = Project.objects.filter(end_date__lt=today).count()
-            
-            # Draft projects: no start_date set
-            draft_projects = Project.objects.filter(start_date__isnull=True).count()
+            # Project Statistics (using status field)
+            active_projects = Project.objects.filter(status='in_progress').count()
+            completed_projects = Project.objects.filter(status='completed').count()
+            draft_projects = Project.objects.filter(models.Q(status='draft') | models.Q(status__isnull=True)).count()
             
             # Real Financial Statistics from ProjectItem calculations
             from calculations.models import ProjectItem
@@ -106,20 +97,11 @@ class DashboardStatsView(APIView):
             )['avg'] or 0
             
             # Equipment Statistics
-            total_network_equipment = sum([
-                ProjectNetworkItem.objects.aggregate(total=Sum('quantity'))['total'] or 0,
-                ProjectServerItem.objects.aggregate(total=Sum('quantity'))['total'] or 0,
-                ProjectUserDeviceItem.objects.aggregate(total=Sum('quantity'))['total'] or 0,
-                ProjectInfrastructureItem.objects.aggregate(total=Sum('quantity'))['total'] or 0,
-                ProjectVisioItem.objects.aggregate(total=Sum('quantity'))['total'] or 0
-            ])
+            # Equipment analytics - using ProjectItem instead
+            total_equipment = ProjectItem.objects.aggregate(total=Sum('quantity'))['total'] or 0
             
-            # Most used equipment types
-            most_used_network = ProjectNetworkItem.objects.values('equipment__name').annotate(
-                total_quantity=Sum('quantity')
-            ).order_by('-total_quantity')[:5]
-            
-            most_used_servers = ProjectServerItem.objects.values('equipment__name').annotate(
+            # Most used materials
+            most_used_materials = ProjectItem.objects.values('material__name').annotate(
                 total_quantity=Sum('quantity')
             ).order_by('-total_quantity')[:5]
             
@@ -183,7 +165,7 @@ class DashboardStatsView(APIView):
                 project_growth_rate = ((projects_this_month - projects_last_month) / projects_last_month) * 100
             
             print(f"Financial - Total France: {total_cost_france}, Total Morocco: {total_cost_morocco}")
-            print(f"Equipment - Total: {total_network_equipment}, Laptops: {total_laptops}, Desktops: {total_desktops}")
+            print(f"Equipment - Total: {total_equipment}, Laptops: {total_laptops}, Desktops: {total_desktops}")
             print(f"Growth - Projects this month: {projects_this_month}, Growth rate: {project_growth_rate:.1f}%")
             
             return {
@@ -208,15 +190,14 @@ class DashboardStatsView(APIView):
                     'project_growth_percentage': round(project_growth_rate, 1),
                 },
                 'equipment_analytics': {
-                    'total_network_equipment': total_network_equipment,
+                    'total_equipment': total_equipment,
                     'total_laptops': total_laptops,
                     'total_desktops': total_desktops,
                     'total_printers': total_printers,
                     'total_aps': total_aps,
                     'total_videoconference': total_videoconference,
                     'total_users_in_projects': total_users_in_projects,
-                    'most_used_network_equipment': list(most_used_network),
-                    'most_used_server_equipment': list(most_used_servers)
+                    'most_used_materials': list(most_used_materials)
                 },
                 'trends': {
                     'projects_this_month': projects_this_month,

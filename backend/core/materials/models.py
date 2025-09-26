@@ -67,13 +67,13 @@ class Material(models.Model):
     calculation_type = models.CharField(
         max_length=20,
         choices=[
-            ('PER_USER', 'Per User'),
+            ('PER_USER', 'Per User (Number of Users)'),
             ('PER_SERVER', 'Per Server'),
-            ('PER_DEVICE', 'Per Computer/Device'),
+            ('PER_PC', 'Per PC (Number of PCs)'),
+            ('PER_DEVICE', 'Per Device'),
             ('PER_SWITCH', 'Per Switch'),
-            ('PER_PROJECT', 'Per Project'),
             ('FIXED', 'Fixed Amount'),
-            ('CONDITIONAL', 'Conditional')
+            ('CONDITIONAL', 'Conditional (Based on Requirements)')
         ],
         default='FIXED',
         verbose_name="Calculation Type"

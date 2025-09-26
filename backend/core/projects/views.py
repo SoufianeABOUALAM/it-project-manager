@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
-from .services import ProjectItemGenerator
+# ProjectItemGenerator removed - using Material model instead
 from django.http import HttpResponse
 from .exporters import ExcelExporter
 from django.conf import settings
@@ -13,32 +13,12 @@ from django.utils import timezone
 import os
 import posixpath
 
-from .models import (
-    Project,
-    NetworkEquipment,
-    ServerEquipment,
-    UserDevice,
-    SoftwareLicense,
-    Service,
-    InfrastructureEquipment,
-    VisioEquipment,
-    ProjectNetworkItem,
-    ProjectServerItem,
-    ProjectUserDeviceItem,
-    ProjectSoftwareItem,
-    ProjectServiceItem,
-    ProjectInfrastructureItem,
-    ProjectVisioItem,
-)
+from .models import Project
 from .serializers import (
     ProjectListSerializer,
     ProjectDetailSerializer,
     ProjectCreateSerializer,
     ProjectUpdateSerializer,
-    InfrastructureEquipmentSerializer,
-    VisioEquipmentSerializer,
-    ProjectInfrastructureItemSerializer,
-    ProjectVisioItemSerializer,
 )
 
 
@@ -48,153 +28,10 @@ class StandardPagination(PageNumberPagination):
     max_page_size = 100
 
 
-# Simple ModelSerializers for equipments and project items
-class NetworkEquipmentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = NetworkEquipment
-        fields = '__all__'
+# Legacy equipment serializers removed - using Material model instead
 
 
-class ServerEquipmentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ServerEquipment
-        fields = '__all__'
-
-
-class UserDeviceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = UserDevice
-        fields = '__all__'
-
-
-class SoftwareLicenseSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = SoftwareLicense
-        fields = '__all__'
-
-
-class ServiceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Service
-        fields = '__all__'
-
-
-class ProjectNetworkItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProjectNetworkItem
-        fields = '__all__'
-
-
-class ProjectServerItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProjectServerItem
-        fields = '__all__'
-
-
-class ProjectUserDeviceItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProjectUserDeviceItem
-        fields = '__all__'
-
-
-class ProjectSoftwareItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProjectSoftwareItem
-        fields = '__all__'
-
-
-class ProjectServiceItemSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProjectServiceItem
-        fields = '__all__'
-
-
-# Generic viewsets for equipment and items (CRUD)
-class EquipmentBaseViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-    pagination_class = StandardPagination
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['name', 'supplier']
-
-
-class NetworkEquipmentViewSet(EquipmentBaseViewSet):
-    queryset = NetworkEquipment.objects.all()
-    serializer_class = NetworkEquipmentSerializer
-    search_fields = ['name', 'supplier', 'equipment_type']
-
-
-class ServerEquipmentViewSet(EquipmentBaseViewSet):
-    queryset = ServerEquipment.objects.all()
-    serializer_class = ServerEquipmentSerializer
-
-
-class UserDeviceViewSet(EquipmentBaseViewSet):
-    queryset = UserDevice.objects.all()
-    serializer_class = UserDeviceSerializer
-
-
-class SoftwareLicenseViewSet(EquipmentBaseViewSet):
-    queryset = SoftwareLicense.objects.all()
-    serializer_class = SoftwareLicenseSerializer
-
-
-class ServiceViewSet(EquipmentBaseViewSet):
-    queryset = Service.objects.all()
-    serializer_class = ServiceSerializer
-
-
-class InfrastructureEquipmentViewSet(EquipmentBaseViewSet):
-    queryset = InfrastructureEquipment.objects.all()
-    serializer_class = InfrastructureEquipmentSerializer
-    search_fields = ['name', 'supplier', 'infra_type']
-
-
-class VisioEquipmentViewSet(EquipmentBaseViewSet):
-    queryset = VisioEquipment.objects.all()
-    serializer_class = VisioEquipmentSerializer
-    search_fields = ['name', 'supplier', 'visio_type']
-
-
-class ProjectItemBaseViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
-    pagination_class = StandardPagination
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['project__name', 'equipment__name']
-
-
-class ProjectNetworkItemViewSet(ProjectItemBaseViewSet):
-    queryset = ProjectNetworkItem.objects.all()
-    serializer_class = ProjectNetworkItemSerializer
-
-
-class ProjectServerItemViewSet(ProjectItemBaseViewSet):
-    queryset = ProjectServerItem.objects.all()
-    serializer_class = ProjectServerItemSerializer
-
-
-class ProjectUserDeviceItemViewSet(ProjectItemBaseViewSet):
-    queryset = ProjectUserDeviceItem.objects.all()
-    serializer_class = ProjectUserDeviceItemSerializer
-
-
-class ProjectSoftwareItemViewSet(ProjectItemBaseViewSet):
-    queryset = ProjectSoftwareItem.objects.all()
-    serializer_class = ProjectSoftwareItemSerializer
-
-
-class ProjectServiceItemViewSet(ProjectItemBaseViewSet):
-    queryset = ProjectServiceItem.objects.all()
-    serializer_class = ProjectServiceItemSerializer
-
-
-class ProjectInfrastructureItemViewSet(ProjectItemBaseViewSet):
-    queryset = ProjectInfrastructureItem.objects.all()
-    serializer_class = ProjectInfrastructureItemSerializer
-
-
-class ProjectVisioItemViewSet(ProjectItemBaseViewSet):
-    queryset = ProjectVisioItem.objects.all()
-    serializer_class = ProjectVisioItemSerializer
+# Legacy equipment viewsets removed - using Material model instead
 
 
 # Project viewset: owner / admin restrictions + use your custom serializers
@@ -223,10 +60,10 @@ class ProjectViewSet(viewsets.ModelViewSet):
         
         # allow admins to see all projects
         if getattr(user, 'role', None) in ['admin', 'super_admin'] or user.is_staff or user.is_superuser:
-            projects = Project.objects.all()
+            projects = Project.objects.select_related('created_by').all()
             print(f"DEBUG: Returning all projects: {projects.count()}")
             return projects
-        projects = Project.objects.filter(created_by=user)
+        projects = Project.objects.select_related('created_by').filter(created_by=user)
         print(f"DEBUG: Returning user projects: {projects.count()}")
         return projects
     
@@ -250,9 +87,15 @@ class ProjectViewSet(viewsets.ModelViewSet):
     
     @action(detail=True, methods=['get'], url_path='export-excel')
     def export_excel(self, request, pk=None):
-        project = self.get_object()
-        exporter = ExcelExporter()
-        excel_buffer = exporter.generate_project_excel(project)
+        try:
+            project = self.get_object()
+            exporter = ExcelExporter()
+            excel_buffer = exporter.generate_project_excel(project)
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to generate Excel export: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
         # If save=1, save to MEDIA_ROOT/exports/projects and return JSON
         save_flag = request.query_params.get("save", "0").lower() in ("1", "true", "yes")
@@ -315,18 +158,13 @@ class ProjectViewSet(viewsets.ModelViewSet):
         project = serializer.save(created_by=self.request.user)
         # Ensure project is saved and has a primary key
         project.refresh_from_db()
-        # Disable auto-generation for now - let frontend handle budget calculation
-        # autogen = self.request.query_params.get("autogen", "1") != "0"
-        # if autogen:
-        #     ProjectItemGenerator().generate(project, replace=False)
+        # Auto-generation removed - using Material model instead
 
 
     @action(detail=True, methods=['post'], url_path='generate-items')
     def generate_items(self, request, pk=None):
-        project = self.get_object()
-        replace = request.data.get("replace", False) in (True, "1", "true", "True")
-        result = ProjectItemGenerator().generate(project, replace=replace)
-        return Response({"project_id": project.id, **result})
+        # Legacy equipment generation removed - using Material model instead
+        return Response({"message": "Equipment generation removed - using Material model instead"})
 
     # convenience endpoint to recalculate budget (keeps old behavior)
     @action(detail=True, methods=['post'], url_path='recalculate')
@@ -337,6 +175,57 @@ class ProjectViewSet(viewsets.ModelViewSet):
         calculator.save_project_budget(project)
         return Response(ProjectDetailSerializer(project, context={'request': request}).data)
 
+    @action(detail=False, methods=['post'], url_path='recalculate-all')
+    def recalculate_all(self, request):
+        """Recalculate budgets for all projects"""
+        try:
+            from calculations.services import ProjectCalculator
+            calculator = ProjectCalculator()
+            
+            projects = self.get_queryset()
+            results = []
+            
+            if not projects.exists():
+                return Response({
+                    'message': 'No projects found to recalculate',
+                    'results': []
+                })
+            
+            for project in projects:
+                try:
+                    project_items, total_france, total_morocco = calculator.save_project_budget(project)
+                    results.append({
+                        'project_id': project.id,
+                        'project_name': project.name,
+                        'total_france': float(total_france),
+                        'total_morocco': float(total_morocco),
+                        'items_count': len(project_items),
+                        'status': 'success'
+                    })
+                except Exception as e:
+                    print(f"Error recalculating budget for project {project.id}: {str(e)}")
+                    results.append({
+                        'project_id': project.id,
+                        'project_name': project.name,
+                        'error': str(e),
+                        'status': 'error'
+                    })
+            
+            success_count = len([r for r in results if r['status'] == 'success'])
+            error_count = len([r for r in results if r['status'] == 'error'])
+            
+            return Response({
+                'message': f'Budget recalculation completed: {success_count} success, {error_count} errors',
+                'results': results
+            })
+            
+        except Exception as e:
+            print(f"Error in recalculate_all: {str(e)}")
+            return Response(
+                {'error': f'Failed to recalculate budgets: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
     @action(detail=True, methods=['get'], url_path='budget')
     def budget(self, request, pk=None):
         project = self.get_object()
@@ -346,8 +235,8 @@ class ProjectViewSet(viewsets.ModelViewSet):
         data = {
             'project_id': project.id,
             'project_name': project.name,
-            'total_cost_france': getattr(project, 'total_cost_france', None),
-            'total_cost_morocco': getattr(project, 'total_cost_morocco', None),
+            'total_cost_france': getattr(project, 'total_cost_france', 0) or 0,
+            'total_cost_morocco': getattr(project, 'total_cost_morocco', 0) or 0,
             'budget_breakdown': breakdown,
         }
         return Response(data)
@@ -358,15 +247,15 @@ class ProjectViewSet(viewsets.ModelViewSet):
         Get detailed financial breakdown by category
         """
         project = self.get_object()
-        from .budget_calculator import ProjectBudgetCalculator
+        from calculations.services import ProjectCalculator
         
-        calculator = ProjectBudgetCalculator()
-        breakdown = calculator.calculate_detailed_budget(project)
+        calculator = ProjectCalculator()
+        breakdown = calculator.get_budget_breakdown(project)
         
         # Calculate totals
-        total_france = sum(cat['france'] for cat in breakdown.values())
-        total_morocco = sum(cat['morocco'] for cat in breakdown.values())
-        total_items = sum(cat['items'] for cat in breakdown.values())
+        total_france = sum(cat['total_france'] for cat in breakdown.values())
+        total_morocco = sum(cat['total_morocco'] for cat in breakdown.values())
+        total_items = sum(len(cat['items']) for cat in breakdown.values())
         
         # Calculate cost per user
         cost_per_user_france = total_france / project.number_of_users if project.number_of_users > 0 else 0
@@ -384,36 +273,12 @@ class ProjectViewSet(viewsets.ModelViewSet):
                 'cost_per_user_morocco': float(cost_per_user_morocco),
             },
             'breakdown': {
-                'user_devices': {
-                    'france': float(breakdown['user_devices']['france']),
-                    'morocco': float(breakdown['user_devices']['morocco']),
-                    'items': breakdown['user_devices']['items']
-                },
-                'network_equipment': {
-                    'france': float(breakdown['network_equipment']['france']),
-                    'morocco': float(breakdown['network_equipment']['morocco']),
-                    'items': breakdown['network_equipment']['items']
-                },
-                'server_equipment': {
-                    'france': float(breakdown['server_equipment']['france']),
-                    'morocco': float(breakdown['server_equipment']['morocco']),
-                    'items': breakdown['server_equipment']['items']
-                },
-                'infrastructure_equipment': {
-                    'france': float(breakdown['infrastructure_equipment']['france']),
-                    'morocco': float(breakdown['infrastructure_equipment']['morocco']),
-                    'items': breakdown['infrastructure_equipment']['items']
-                },
-                'software_licenses': {
-                    'france': float(breakdown['software_licenses']['france']),
-                    'morocco': float(breakdown['software_licenses']['morocco']),
-                    'items': breakdown['software_licenses']['items']
-                },
-                'services': {
-                    'france': float(breakdown['services']['france']),
-                    'morocco': float(breakdown['services']['morocco']),
-                    'items': breakdown['services']['items']
-                },
+                category_name.lower().replace(' ', '_'): {
+                    'france': float(data['total_france']),
+                    'morocco': float(data['total_morocco']),
+                    'items': len(data['items'])
+                }
+                for category_name, data in breakdown.items()
             }
         }
         return Response(data)

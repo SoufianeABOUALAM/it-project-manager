@@ -80,9 +80,6 @@ const ProjectForm = () => {
         internet_line_type: '',
         internet_line_speed: '',
         num_printers: 0,
-        num_traceau: 0,
-        num_videoconference: 0,
-        visio_type: '',
         num_aps: 0,
     });
     const [error, setError] = useState('');
@@ -141,9 +138,6 @@ const ProjectForm = () => {
                 internet_line_type: projectData.internet_line_type || '',
                 internet_line_speed: projectData.internet_line_speed || '',
                 num_printers: projectData.num_printers || 0,
-                num_traceau: projectData.num_traceau || 0,
-                num_videoconference: projectData.num_videoconference || 0,
-                visio_type: projectData.visio_type || '',
                 num_aps: projectData.num_aps || 0,
             });
             
@@ -216,6 +210,9 @@ const ProjectForm = () => {
     };
 
     const formatCurrency = (amount, currency = 'EUR') => {
+        if (amount === null || amount === undefined || isNaN(amount) || amount === '') {
+            return '0,00 €';
+        }
         return new Intl.NumberFormat('fr-FR', {
             style: 'currency',
             currency: currency === 'EUR' ? 'EUR' : 'MAD'
@@ -957,36 +954,6 @@ const ProjectForm = () => {
                                                 </Select>
                                             </FormControl>
                                             
-                                            <FormControl>
-                                                <FormLabel fontSize="sm" fontWeight="semibold" color="gray.700" mb={2}>
-                                                    Nombre de Traceau
-                                                </FormLabel>
-                                                <NumberInput
-                                                    value={formData.num_traceau}
-                                                    onChange={(value) => handleChange({ target: { name: 'num_traceau', value } })}
-                                                    min={0}
-                                                >
-                                                    <NumberInputField
-                                                        placeholder="0"
-                                                        bg="white"
-                                                        border="2px solid"
-                                                        borderColor="gray.200"
-                                                        borderRadius="lg"
-                                                        fontSize="md"
-                                                        _focus={{ 
-                                                            borderColor: "purple.500", 
-                                                            boxShadow: "0 0 0 3px rgba(102, 126, 234, 0.1)",
-                                                            bg: "white"
-                                                        }}
-                                                        _hover={{ borderColor: "gray.300" }}
-                                                        transition="all 0.2s ease"
-                                                    />
-                                                    <NumberInputStepper>
-                                                        <NumberIncrementStepper />
-                                                        <NumberDecrementStepper />
-                                                    </NumberInputStepper>
-                                                </NumberInput>
-                                            </FormControl>
                                         </SimpleGrid>
 
                                         <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4}>
@@ -1038,52 +1005,6 @@ const ProjectForm = () => {
                                                 </NumberInput>
                                             </FormControl>
 
-                                            <FormControl>
-                                                <FormLabel fontSize="sm" fontWeight="semibold" color="gray.700" mb={2}>
-                                                    Nombre de Visioconférence
-                                                </FormLabel>
-                                                <NumberInput
-                                                    value={formData.num_videoconference}
-                                                    onChange={(value) => handleChange({ target: { name: 'num_videoconference', value } })}
-                                                    min={0}
-                                                >
-                                                    <NumberInputField
-                                                        placeholder="0"
-                                                        bg="white"
-                                                        border="2px solid"
-                                                        borderColor="gray.200"
-                                                        borderRadius="lg"
-                                                        h="48px"
-                                                    />
-                                                    <NumberInputStepper>
-                                                        <NumberIncrementStepper />
-                                                        <NumberDecrementStepper />
-                                                    </NumberInputStepper>
-                                                </NumberInput>
-                                            </FormControl>
-
-                                            <FormControl>
-                                                <FormLabel fontSize="sm" fontWeight="semibold" color="gray.700" mb={2}>
-                                                    Type de Visioconférence
-                                                </FormLabel>
-                                                <Select
-                                                    name="visio_type"
-                                                    value={formData.visio_type}
-                                                    onChange={handleChange}
-                                                    bg="white"
-                                                    border="2px solid"
-                                                    borderColor="gray.200"
-                                                    borderRadius="lg"
-                                                    h="48px"
-                                                    placeholder="Sélectionner le type"
-                                                >
-                                                    <option value="HARDWARE_CODEC">Hardware codec (room system)</option>
-                                                    <option value="SOFTWARE">Software (Teams/Zoom)</option>
-                                                    <option value="ROOM_SYSTEM">Room system</option>
-                                                    <option value="SIP_H323">SIP / H.323</option>
-                                                    <option value="OTHER">Autre</option>
-                                                </Select>
-                                            </FormControl>
 
                                             <FormControl>
                                                 <FormLabel fontSize="sm" fontWeight="semibold" color="gray.700" mb={2}>

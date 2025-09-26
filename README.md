@@ -184,20 +184,27 @@ DATABASES = {
 ### Development
 ```bash
 # Backend
+cd backend/core
 python manage.py runserver
 
 # Frontend
+cd frontend
 npm start
 ```
 
-### Production
-See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for complete production deployment instructions.
+### Production (Railway)
+See [RAILWAY_DEPLOYMENT_GUIDE.md](RAILWAY_DEPLOYMENT_GUIDE.md) for complete Railway deployment instructions.
+
+**Quick Railway Deploy:**
+1. Push to GitHub
+2. Connect to Railway
+3. Add PostgreSQL database
+4. Set environment variables
+5. Deploy!
 
 ## 📚 Documentation
 
-- [Setup Instructions](SETUP_INSTRUCTIONS.md) - Detailed setup guide
-- [Deployment Guide](DEPLOYMENT_GUIDE.md) - Production deployment
-- [Project Overview](PROJECT_OVERVIEW.md) - Technical architecture
+- [Railway Deployment Guide](RAILWAY_DEPLOYMENT_GUIDE.md) - Complete Railway deployment instructions
 
 ## 🤝 Contributing
 

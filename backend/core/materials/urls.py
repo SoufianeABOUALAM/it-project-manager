@@ -16,5 +16,8 @@ urlpatterns = [
     # Custom Material System URLs
     path('materials/<int:category_id>/', views.get_materials_by_category, name='materials-by-category'),
     path('custom-material/', views.add_custom_material, name='add-custom-material'),
+    path('custom-material/<int:material_id>/', views.delete_custom_material, name='delete-custom-material'),
     path('recalculate-budget/<int:project_id>/', views.recalculate_project_budget, name='recalculate-budget'),
+    path('setup-default-materials/', views.setup_default_materials, name='setup-default-materials'),
+    path('check-materials-status/', views.check_materials_status, name='check-materials-status'),
 ]

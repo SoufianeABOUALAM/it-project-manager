@@ -1,152 +1,9 @@
 from django.db import models
 from django.utils import timezone
-from decimal import Decimal, ROUND_HALF_UP
-import requests
-from datetime import timedelta
-from django.conf import settings
-
 from accounts.models import User
 
-_EUR_MAD_CACHE = {"rate": None, "ts": None}
-_EUR_MAD_TTL = getattr(settings, "EUR_MAD_TTL_SECONDS", 600)  # 10 min par défaut
-_EUR_MAD_FALLBACK = Decimal(str(getattr(settings, "EUR_MAD_FALLBACK", "11.0")))  # fallback si API KO
-_FX_URL = getattr(
-    settings,
-    "EUR_MAD_FX_URL",
-    "https://api.exchangerate.host/latest?base=EUR&symbols=MAD",
-)
+# Legacy equipment models removed - using Material model instead
 
-def _quant2(val: Decimal) -> Decimal:
-    return (Decimal(val or 0)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-
-def _get_eur_mad_rate() -> Decimal:
-    now = timezone.now()
-    if _EUR_MAD_CACHE["rate"] and _EUR_MAD_CACHE["ts"] and (now - _EUR_MAD_CACHE["ts"]).total_seconds() < _EUR_MAD_TTL:
-        return _EUR_MAD_CACHE["rate"]
-    try:
-        resp = requests.get(_FX_URL, timeout=8)
-        resp.raise_for_status()
-        data = resp.json()
-        rate = data.get("rates", {}).get("MAD")
-        if rate is None:
-            raise ValueError("MAD rate missing")
-        rate_dec = Decimal(str(rate))
-        _EUR_MAD_CACHE.update({"rate": rate_dec, "ts": now})
-        return rate_dec
-    except Exception:
-        # fallback si l’API est indisponible
-        return _EUR_MAD_FALLBACK
-
-class BaseEquipment(models.Model):
-    """
-    Modèle abstrait pour tout le matériel.
-    """
-    name = models.CharField(max_length=255, help_text="Nom spécifique de l'article.")
-    description = models.TextField(blank=True, null=True)
-    supplier = models.CharField(max_length=255, blank=True, null=True)
-
-    # Structure des coûts
-    fixed_cost_eur = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    fixed_cost_mad = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    monthly_cost_eur = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    monthly_cost_mad = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-
-    class Meta:
-        abstract = True
-        ordering = ["name"]
-
-    def __str__(self):
-        return self.name
-
-    def save(self, *args, **kwargs):
-        # Recalcule MAD si nouvel objet, si EUR a changé, ou si MAD manquant.
-        recalc = False
-        if not self.pk:
-            recalc = True
-        else:
-            try:
-                old = self.__class__.objects.only("fixed_cost_eur", "monthly_cost_eur", "fixed_cost_mad", "monthly_cost_mad").get(pk=self.pk)
-                if (old.fixed_cost_eur != self.fixed_cost_eur) or (old.monthly_cost_eur != self.monthly_cost_eur):
-                    recalc = True
-                if (old.fixed_cost_mad in (None, Decimal("0"))) and (self.fixed_cost_eur or 0):
-                    recalc = True
-                if (old.monthly_cost_mad in (None, Decimal("0"))) and (self.monthly_cost_eur or 0):
-                    recalc = True
-            except self.__class__.DoesNotExist:
-                recalc = True
-
-        if recalc:
-            rate = _get_eur_mad_rate()
-            self.fixed_cost_mad = _quant2(Decimal(self.fixed_cost_eur or 0) * rate)
-            self.monthly_cost_mad = _quant2(Decimal(self.monthly_cost_eur or 0) * rate)
-
-        super().save(*args, **kwargs)
-
-class NetworkEquipment(BaseEquipment):
-    """Équipements réseau (switch, router, AP...)."""
-    class EquipmentType(models.TextChoices):
-        SWITCH = "SWITCH", "Switch"
-        ROUTER = "ROUTER", "Router"
-        FIREWALL = "FIREWALL", "Firewall"
-        ACCESS_POINT = "AP", "Access Point"
-        UPS = "UPS", "UPS"
-        OTHER = "OTHER", "Other"
-
-    equipment_type = models.CharField(max_length=20, choices=EquipmentType.choices, default=EquipmentType.OTHER)
-    port_count = models.PositiveIntegerField(null=True, blank=True, help_text="Nombre de ports.")
-    speed = models.CharField(max_length=50, blank=True, null=True, help_text="Vitesse des ports (ex: 1Gbps).")
-
-
-class ServerEquipment(BaseEquipment):
-    """Équipements de salle serveur."""
-    rack_units = models.PositiveIntegerField(null=True, blank=True, help_text="Hauteur en U.")
-    cpu = models.CharField(max_length=100, blank=True, null=True, help_text="CPU modèle.")
-    ram_gb = models.PositiveIntegerField(null=True, blank=True, help_text="RAM en GB.")
-
-
-class UserDevice(BaseEquipment):
-    """PC, imprimantes, etc."""
-    class DeviceType(models.TextChoices):
-        LAPTOP = "LAPTOP", "Laptop"
-        DESKTOP = "DESKTOP", "Desktop"
-        PRINTER = "PRINTER", "Printer"
-        MONITOR = "MONITOR", "Monitor"
-        PHONE = "PHONE", "Phone"
-
-    device_type = models.CharField(max_length=20, choices=DeviceType.choices)
-    screen_size = models.DecimalField(max_digits=4, decimal_places=1, null=True, blank=True)
-    storage_gb = models.PositiveIntegerField(null=True, blank=True)
-
-
-class SoftwareLicense(BaseEquipment):
-    """Licences logicielles."""
-    class LicenseType(models.TextChoices):
-        PERPETUAL = "PERPETUAL", "Perpetual"
-        SUBSCRIPTION = "SUBSCRIPTION", "Subscription"
-
-    class SubscriptionPeriod(models.TextChoices):
-        MONTHLY = "MONTHLY", "Monthly"
-        ANNUAL = "ANNUAL", "Annual"
-
-    license_type = models.CharField(max_length=20, choices=LicenseType.choices, default=LicenseType.SUBSCRIPTION)
-    subscription_period = models.CharField(max_length=20, choices=SubscriptionPeriod.choices, null=True, blank=True)
-    user_limit = models.PositiveIntegerField(null=True, blank=True)
-
-
-class Service(BaseEquipment):
-    """Services (ligne internet, support, etc.)."""
-    class ServiceType(models.TextChoices):
-        INTERNET = "INTERNET", "Internet Connection"
-        INSTALLATION = "INSTALLATION", "Installation"
-        CONFIGURATION = "CONFIGURATION", "Configuration"
-        SUPPORT = "SUPPORT", "Support Contract"
-
-    service_type = models.CharField(max_length=20, choices=ServiceType.choices)
-    bandwidth_mbps = models.PositiveIntegerField(null=True, blank=True)
-    sla_response_hours = models.PositiveIntegerField(null=True, blank=True)
-
-
-# --- NEW: Visio types (shared) ---
 class VisioType(models.TextChoices):
     HARDWARE_CODEC = "HARDWARE_CODEC", "Hardware codec (room system)"
     SOFTWARE = "SOFTWARE", "Software (Teams/Zoom)"
@@ -154,47 +11,10 @@ class VisioType(models.TextChoices):
     SIP_H323 = "SIP_H323", "SIP / H.323"
     OTHER = "OTHER", "Autre"
 
-
-# --- NEW: Visio equipment model ---
-class VisioEquipment(BaseEquipment):
-    """Équipements Visioconférence (codec, room system, endpoints...)."""
-    # reuse VisioType as equipment type hint
-    visio_type = models.CharField(max_length=30, choices=VisioType.choices, default=VisioType.OTHER)
-    supported_users = models.PositiveIntegerField(null=True, blank=True, help_text="Nombre d'utilisateurs supportés (approx.)")
-    ports = models.PositiveIntegerField(null=True, blank=True, help_text="Nombre de ports (si applicable)")
-
-    class Meta:
-        ordering = ["name"]
-
-
-class PurchaseLocation(models.TextChoices):
-    FRANCE = "FR", "France"
-    LOCAL = "LOCAL", "Local"
-
-
-class InfrastructureEquipment(BaseEquipment):
-    """Racks, onduleurs, câbles, KVM, accessoires..."""
-    class InfraType(models.TextChoices):
-        RACK = "RACK", "Rack"
-        UPS = "UPS", "Onduleur"
-        CABLE = "CABLE", "Câble réseau"
-        KVM = "KVM", "KVM Console/Switch"
-        ACCESSORY = "ACCESSORY", "Accessoire"
-        OTHER = "OTHER", "Autre"
-
-    infra_type = models.CharField(max_length=20, choices=InfraType.choices, default=InfraType.OTHER)
-    length_m = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True, help_text="Longueur (m) — pour câbles")
-    port_count = models.PositiveIntegerField(null=True, blank=True, help_text="Nombre de ports (pour KVM)")
-
-    class Meta:
-        ordering = ["name"]
-
-
 class Project(models.Model):
     name = models.CharField(max_length=255)
     company_name = models.CharField(max_length=255, blank=True, default="")
-    services = models.ManyToManyField(Service, through="ProjectServiceItem", blank=True)
-    infrastructure_equipment = models.ManyToManyField(InfrastructureEquipment, through="ProjectInfrastructureItem", blank=True)
+    # Legacy equipment relations removed - using Material model instead
     class Entity(models.TextChoices):
         BOUYGUES_CONSTRUCTION = "BOUYGUES_CONSTRUCTION", "Bouygues Construction"
         BOUYGUES_IMMOBILIER = "BOUYGUES_IMMOBILIER", "Bouygues Immobilier"
@@ -243,7 +63,7 @@ class Project(models.Model):
     internet_line_speed = models.CharField(max_length=50, blank=True, default="", help_text="Ex: 100Mbps")
 
     num_printers = models.PositiveIntegerField(default=0)
-    num_traceau = models.PositiveIntegerField(default=0, help_text="Nombre de traceau")
+    num_traceau = models.PositiveIntegerField(default=0, help_text="Nombre de Traceur A0")
     num_videoconference = models.PositiveIntegerField(default=0)
     num_aps = models.PositiveIntegerField(default=0, help_text="Nombre de points d'accès (AP)")
     
@@ -251,7 +71,7 @@ class Project(models.Model):
     num_switch_24 = models.PositiveIntegerField(default=0, help_text="Nombre de switch 24 ports")
     num_switch_48 = models.PositiveIntegerField(default=0, help_text="Nombre de switch 48 ports")
 
-    # --- VISIO TYPE (moved inside Project) ---
+    # --- VISIO TYPE ---
     visio_type = models.CharField(
         max_length=30,
         choices=VisioType.choices,
@@ -286,13 +106,7 @@ class Project(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
-    # relations équipement via modèles de liaison
-    network_equipment = models.ManyToManyField(NetworkEquipment, through="ProjectNetworkItem", blank=True)
-    server_equipment = models.ManyToManyField(ServerEquipment, through="ProjectServerItem", blank=True)
-    user_devices = models.ManyToManyField(UserDevice, through="ProjectUserDeviceItem", blank=True)
-    software_licenses = models.ManyToManyField(SoftwareLicense, through="ProjectSoftwareItem", blank=True)
-    services = models.ManyToManyField(Service, through="ProjectServiceItem", blank=True)
-    visio_equipment = models.ManyToManyField(VisioEquipment, through="ProjectVisioItem", blank=True)
+    # Legacy equipment relations removed - using Material model instead
 
     class Meta:
         ordering = ["-created_at"]
@@ -434,78 +248,4 @@ class Project(models.Model):
     def __str__(self):
         return f"{self.name} - {self.company_name or 'N/A'}"
 
-class ProjectInfrastructureItem(models.Model):
-    equipment = models.ForeignKey(InfrastructureEquipment, on_delete=models.CASCADE)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)
-    source = models.CharField(max_length=50, blank=True, default="")
-    purchase_location = models.CharField(max_length=10, choices=PurchaseLocation.choices, default=PurchaseLocation.FRANCE)
-
-    class Meta:
-        unique_together = ("project", "equipment")
-
-class ProjectNetworkItem(models.Model):
-    equipment = models.ForeignKey(NetworkEquipment, on_delete=models.CASCADE)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)
-    source = models.CharField(max_length=50, blank=True, default="")
-    purchase_location = models.CharField(max_length=10, choices=PurchaseLocation.choices, default=PurchaseLocation.FRANCE)
-
-    class Meta:
-        unique_together = ("project", "equipment")
-
-
-class ProjectServerItem(models.Model):
-    equipment = models.ForeignKey(ServerEquipment, on_delete=models.CASCADE)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)
-    source = models.CharField(max_length=50, blank=True, default="")
-    purchase_location = models.CharField(max_length=10, choices=PurchaseLocation.choices, default=PurchaseLocation.FRANCE)
-
-    class Meta:
-        unique_together = ("project", "equipment")
-
-
-class ProjectUserDeviceItem(models.Model):
-    equipment = models.ForeignKey(UserDevice, on_delete=models.CASCADE)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)
-    source = models.CharField(max_length=50, blank=True, default="")
-    purchase_location = models.CharField(max_length=10, choices=PurchaseLocation.choices, default=PurchaseLocation.FRANCE)
-
-    class Meta:
-        unique_together = ("project", "equipment")
-
-
-class ProjectSoftwareItem(models.Model):
-    equipment = models.ForeignKey(SoftwareLicense, on_delete=models.CASCADE)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)
-    source = models.CharField(max_length=50, blank=True, default="")
-    purchase_location = models.CharField(max_length=10, choices=PurchaseLocation.choices, default=PurchaseLocation.FRANCE)
-
-    class Meta:
-        unique_together = ("project", "equipment")
-
-
-class ProjectServiceItem(models.Model):
-    equipment = models.ForeignKey(Service, on_delete=models.CASCADE)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)
-    source = models.CharField(max_length=50, blank=True, default="")
-    purchase_location = models.CharField(max_length=10, choices=PurchaseLocation.choices, default=PurchaseLocation.FRANCE)
-
-    class Meta:
-        unique_together = ("project", "equipment")
-
-
-# --- NEW: ProjectVisioItem linking table ---
-class ProjectVisioItem(models.Model):
-    equipment = models.ForeignKey(VisioEquipment, on_delete=models.CASCADE)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(default=1)
-    source = models.CharField(max_length=50, blank=True, default="")
-    purchase_location = models.CharField(max_length=10, choices=PurchaseLocation.choices, default=PurchaseLocation.FRANCE)
-
-    class Meta:
-        unique_together = ("project", "equipment")
+# Legacy project item models removed - using calculations.models.ProjectItem instead

@@ -16,12 +16,7 @@ class ProjectCalculator:
             'Servers': 'max(users // 50, sites)',
             'Network Switches': 'math.ceil(total_devices / 24) * sites',
             'Network Cables': 'total_devices * 2 * sites',
-            'KVM Console': 'sites',
-            'KVM Switch': 'sites',
-            'KVM Cables': 'sites * 4',
             'PDU': 'sites * 2',
-            'DAC Cables': 'servers * 2',
-            'Transceivers': 'dac_cables * 2',
         }
     
     def calculate_automatic_items(self, project):
@@ -33,46 +28,58 @@ class ProjectCalculator:
         # Calculate basic auto items - using exact database material names
         auto_items = {}
         
-        # Rack: 1 per site
-        auto_items['Rack'] = sites
+        # Infrastructure Materials - Always 1 each
+        auto_items['Rack'] = 1
+        auto_items['Power supply for server'] = 1
+        auto_items['PDU (Power Distribution Unit)'] = 1
         
-        # UPS: 1 per site
-        auto_items['Onduleur (UPS) 3000VA'] = sites
+        # Server Equipment - Based on user choices
+        # Application server: +1 if local apps selected
+        if project.local_apps:
+            auto_items['Application server'] = 1
+        else:
+            auto_items['Application server'] = 0
         
-        # Servers: MAX(users ÷ 50, sites)
-        auto_items['Application server'] = max(users // 50, sites)
+        # File Server (Standard): +1 if file server selected
+        if project.file_server:
+            auto_items['File Server (Standard)'] = 1
+        else:
+            auto_items['File Server (Standard)'] = 0
         
-        # Network Switches: CEILING(total_devices ÷ 24) per site
-        switch_count = math.ceil(total_devices / 24) * sites
-        auto_items['Switch 24 Ports PoE'] = min(switch_count, 2)  # Max 2 switches
-        auto_items['Switch 48 Ports PoE'] = max(0, switch_count - 2)  # Additional switches
+        # Network Equipment - Based on number of users
+        # Access Point: Users ÷ 20
+        auto_items['Access Point'] = max(1, users // 20)
         
-        # Network Cables: (total_devices × 2) per site
+        # Switch 24 Ports PoE: Always 2
+        auto_items['Switch 24 Ports PoE'] = 2
+        
+        # Switch 48 Ports PoE: Users × 1.5 ÷ 48
+        auto_items['Switch 48 Ports PoE'] = max(0, int((users * 1.5) // 48))
+        
+        # Calculate total switches for Tranceiver RJ45 and DAC Cable
+        total_switches = auto_items['Switch 24 Ports PoE'] + auto_items['Switch 48 Ports PoE']
+        
+        # Tranceiver RJ45: Number of switches
+        auto_items['Tranceiver RJ45'] = total_switches
+        
+        # DAC Cable: Number of switches
+        auto_items['DAC Cable'] = total_switches
+        
+        # Network Cables - Based on number of users
+        auto_items['Câble réseau blindé Cat 6 2 m'] = users * 2
+        auto_items['Câble réseau blindé Cat 6 5 m'] = users * 1
+        auto_items['Câble réseau blindé Cat 6 50cm'] = users * 1
+        
+        # Other cables - keep existing logic for now
         cable_count = total_devices * 2 * sites
-        auto_items['Câble réseau blindé Cat 6 0.5 m'] = int(cable_count * 0.3)
-        auto_items['Câble réseau blindé Cat 6 2 m'] = int(cable_count * 0.4)
-        auto_items['Câble réseau blindé Cat 6 5 m'] = int(cable_count * 0.2)
-        auto_items['Câble réseau blindé Cat 6 10 m'] = int(cable_count * 0.1)
         
-        # KVM Console: 1 per site
-        auto_items['KVM Console'] = sites
-        
-        # KVM Switch: 1 per site
-        auto_items['KVM Switch'] = sites
-        
-        # KVM Cables: 4 per site
-        auto_items['KVM Cables'] = sites * 4
-        
-        # PDU: 2 per site
-        auto_items['PDU (Power Distribution Unit)'] = sites * 2
-        
-        # DAC Cables: servers × 2
-        servers = auto_items['Application server']
-        auto_items['DAC Cable'] = servers * 2
-        
-        # Transceivers: DAC cables × 2
-        dac_cables = auto_items['DAC Cable']
-        auto_items['Tranceiver RJ45'] = dac_cables * 2
+        # SD-WAN Selection based on number of users
+        if users <= 50:
+            auto_items['SD-WAN MX67'] = 1
+        elif 51 <= users <= 200:
+            auto_items['SD-WAN MX75'] = 1
+        else:  # users > 200
+            auto_items['SD-WAN MX95'] = 1
         
         return auto_items
     
@@ -82,19 +89,20 @@ class ProjectCalculator:
         
         # Equipment items - using exact database material names
         if project.num_laptop_office > 0:
-            user_items['Laptop - Office'] = project.num_laptop_office
+            user_items['Laptop Bureautique'] = project.num_laptop_office
         if project.num_laptop_tech > 0:
-            user_items['Laptop - Tech'] = project.num_laptop_tech
+            user_items['Laptop Technique'] = project.num_laptop_tech
         if project.num_desktop_office > 0:
-            user_items['Desktop - Office'] = project.num_desktop_office
+            user_items['Desktop Bureautique'] = project.num_desktop_office
         if project.num_desktop_tech > 0:
-            user_items['Desktop - Tech'] = project.num_desktop_tech
+            user_items['Desktop Technique'] = project.num_desktop_tech
         if project.num_printers > 0:
-            user_items['Printer'] = project.num_printers
+            user_items['Imprimante'] = project.num_printers
         if project.num_traceau > 0:
             user_items['Traceur A0'] = project.num_traceau
         if project.num_videoconference > 0:
             user_items['Standard visio system'] = project.num_videoconference
+            user_items['Monitor'] = project.num_videoconference
         if project.num_aps > 0:
             user_items['Access Point'] = project.num_aps
             
@@ -123,7 +131,7 @@ class ProjectCalculator:
                 service_items[f'Fiber Optic {speed}'] = 1
             else:
                 # Fallback to generic internet line
-                service_items['Internet line (STARLINK)'] = 1
+                service_items['STARLINK 500MBps'] = 1
             
         return service_items
     
@@ -135,8 +143,26 @@ class ProjectCalculator:
         service_items = self.get_service_items(project)
         custom_items = self.calculate_custom_materials(project)
         
-        # Combine all items
-        all_items = {**user_items, **auto_items, **service_items, **custom_items}
+        # Combine all items, avoiding duplicates
+        all_items = {}
+        
+        # Add user-specified items first (highest priority)
+        all_items.update(user_items)
+        
+        # Add auto-calculated items (only if not already in user items)
+        for item_name, quantity in auto_items.items():
+            if item_name not in all_items:
+                all_items[item_name] = quantity
+        
+        # Add service items (only if not already calculated)
+        for item_name, quantity in service_items.items():
+            if item_name not in all_items:
+                all_items[item_name] = quantity
+        
+        # Add custom items (only if not already calculated)
+        for item_name, quantity in custom_items.items():
+            if item_name not in all_items:
+                all_items[item_name] = quantity
         
         # Calculate costs
         total_france = Decimal('0')
@@ -226,14 +252,36 @@ class ProjectCalculator:
         """Calculate quantities for custom materials based on smart rules"""
         from materials.models import Material
         
+        # Get all previously calculated items to avoid duplication
+        user_items = self.get_user_specified_items(project)
+        auto_items = self.calculate_automatic_items(project)
+        service_items = self.get_service_items(project)
+        
+        # Combine all previously calculated items
+        all_previous_items = set()
+        all_previous_items.update(user_items.keys())
+        all_previous_items.update(auto_items.keys())
+        all_previous_items.update(service_items.keys())
+        
         custom_materials = Material.objects.filter(
             is_active=True,
-            calculation_type__in=['PER_USER', 'PER_SERVER', 'PER_DEVICE', 'PER_SWITCH', 'PER_PROJECT', 'FIXED', 'CONDITIONAL']
+            calculation_type__in=['PER_USER', 'PER_SERVER', 'PER_PC', 'PER_DEVICE', 'PER_SWITCH', 'PER_PROJECT', 'FIXED', 'CONDITIONAL']
         )
         
         calculated_items = {}
         
         for material in custom_materials:
+            # Skip materials that are already handled by other calculation methods
+            # EXCEPT for materials that should be included in smart calculation
+            if material.name in all_previous_items:
+                # Only skip if it's a duplicate that shouldn't be recalculated
+                # Allow smart calculation materials to override auto-calculated ones
+                if material.calculation_type in ['PER_USER', 'PER_SERVER', 'PER_PC', 'PER_DEVICE']:
+                    # These should be included in smart calculation
+                    pass
+                else:
+                    continue
+                
             quantity = self._calculate_material_quantity(material, project)
             if quantity > 0:
                 calculated_items[material.name] = quantity
@@ -258,11 +306,26 @@ class ProjectCalculator:
                 servers += 1
             quantity = servers * material.multiplier
         
-        elif material.calculation_type == 'PER_DEVICE':
+        elif material.calculation_type == 'PER_PC':
             # Count total PCs (laptops + desktops)
             total_pcs = (project.num_laptop_office + project.num_laptop_tech + 
                         project.num_desktop_office + project.num_desktop_tech)
             quantity = total_pcs * material.multiplier
+            # Apply minimum quantity if specified
+            if hasattr(material, 'min_quantity') and material.min_quantity:
+                quantity = max(quantity, material.min_quantity)
+        
+        elif material.calculation_type == 'PER_DEVICE':
+            # Special case for Docking Station - only count laptops
+            if material.name == 'Docking Station':
+                # Count only laptops (laptop office + laptop tech)
+                total_laptops = (project.num_laptop_office + project.num_laptop_tech)
+                quantity = total_laptops * material.multiplier
+            else:
+                # Count total PCs (laptops + desktops) for other materials
+                total_pcs = (project.num_laptop_office + project.num_laptop_tech + 
+                            project.num_desktop_office + project.num_desktop_tech)
+                quantity = total_pcs * material.multiplier
         
         elif material.calculation_type == 'PER_SWITCH':
             # Calculate total switches automatically based on user count
@@ -277,7 +340,21 @@ class ProjectCalculator:
             quantity = material.multiplier
         
         elif material.calculation_type == 'FIXED':
-            quantity = material.multiplier
+            # Special handling for internet services - only include selected ones
+            if self._is_internet_service(material.name):
+                if self._is_selected_internet_service(material.name, project):
+                    quantity = material.multiplier
+                else:
+                    quantity = 0
+            # Special handling for materials that depend on user choices
+            elif material.name == 'Traceur A0':
+                # Only include if user specified traceurs
+                quantity = project.num_traceau * material.multiplier
+            elif material.name == 'Application server':
+                # Only include if local apps is enabled
+                quantity = (1 if project.local_apps else 0) * material.multiplier
+            else:
+                quantity = material.multiplier
         
         elif material.calculation_type == 'CONDITIONAL':
             if self._check_conditions(material.conditions, project):
@@ -307,6 +384,27 @@ class ProjectCalculator:
                 return False
             # Add more conditions as needed
         return True
+    
+    def _is_internet_service(self, material_name):
+        """Check if a material is an internet service"""
+        internet_types = ['Fiber Optic', 'STARLINK', 'VSAT']
+        return any(internet_type in material_name for internet_type in internet_types)
+    
+    def _is_selected_internet_service(self, material_name, project):
+        """Check if an internet service is selected by the user"""
+        # Map internet line types to their full names
+        type_mapping = {
+            'FO': 'Fiber Optic',
+            'STARLINK': 'STARLINK',
+            'VSAT': 'VSAT'
+        }
+        
+        # Get the full internet service name
+        full_type = type_mapping.get(project.internet_line_type, project.internet_line_type)
+        selected_service = f"{full_type} {project.internet_line_speed}"
+        
+        # Check if this material matches the selected service
+        return selected_service in material_name
 
 
 class MaterialManager:
@@ -330,36 +428,44 @@ class MaterialManager:
     def create_default_materials():
         """Create default materials for testing"""
         materials_data = [
-            # Ordinateurs
+            # Infrastructure - matching ProjectCalculator expectations
+            ('Rack', 'Infrastructure', 500, 5000, True),
+            ('Power supply for server', 'Infrastructure', 200, 2000, True),
+            ('PDU (Power Distribution Unit)', 'Infrastructure', 150, 1500, True),
+            
+            # Server Equipment
+            ('Application server', 'Infrastructure', 2000, 20000, True),
+            ('File Server (Standard)', 'Infrastructure', 1500, 15000, True),
+            
+            # Network Equipment
+            ('Access Point', 'Infrastructure', 150, 1500, True),
+            ('Switch 24 Ports PoE', 'Infrastructure', 300, 3000, True),
+            ('Switch 48 Ports PoE', 'Infrastructure', 500, 5000, True),
+            ('Tranceiver RJ45', 'Infrastructure', 50, 500, True),
+            ('DAC Cable', 'Infrastructure', 30, 300, True),
+            ('Câble réseau blindé Cat 6 2 m', 'Infrastructure', 10, 100, True),
+            ('Câble réseau blindé Cat 6 5 m', 'Infrastructure', 15, 150, True),
+            ('Câble réseau blindé Cat 6 50cm', 'Infrastructure', 5, 50, True),
+            
+            # User Devices
             ('Laptop Bureautique', 'Ordinateurs', 800, 8000, False),
             ('Laptop Technique', 'Ordinateurs', 1200, 12000, False),
             ('Desktop Bureautique', 'Ordinateurs', 600, 6000, False),
             ('Desktop Technique', 'Ordinateurs', 1000, 10000, False),
-            
-            # Réseau
-            ('Servers', 'Réseau', 2000, 20000, True),
-            ('Network Switches', 'Réseau', 200, 2000, True),
-            ('Network Cables', 'Réseau', 10, 100, True),
-            ('Access Points', 'Réseau', 150, 1500, False),
-            ('KVM Console', 'Réseau', 300, 3000, True),
-            ('KVM Switch', 'Réseau', 250, 2500, True),
-            ('KVM Cables', 'Réseau', 50, 500, True),
-            ('DAC Cables', 'Réseau', 100, 1000, True),
-            ('Transceivers', 'Réseau', 80, 800, True),
-            
-            # Infrastructure
-            ('Rack', 'Infrastructure', 500, 5000, True),
-            ('UPS', 'Infrastructure', 400, 4000, True),
-            ('PDU', 'Infrastructure', 150, 1500, True),
-            
-            # Imprimantes
-            ('Printers', 'Imprimantes', 300, 3000, False),
+            ('Imprimante', 'Imprimantes', 300, 3000, False),
+            ('Traceur A0', 'Imprimantes', 500, 5000, False),
+            ('Standard visio system', 'Infrastructure', 800, 8000, False),
+            ('Monitor', 'Infrastructure', 200, 2000, False),
             
             # Services
-            ('File Server', 'Services', 1500, 15000, False, True),
-            ('Internet 100MBps', 'Services', 200, 2000, False, True),
-            ('Internet 200MBps', 'Services', 350, 3500, False, True),
-            ('Internet 500MBps', 'Services', 600, 6000, False, True),
+            ('VSAT 100MBps', 'Services', 300, 3000, False, True),
+            ('VSAT 200MBps', 'Services', 350, 3500, False, True),
+            ('VSAT 500MBps', 'Services', 600, 6000, False, True),
+            ('VSAT 1GBps', 'Services', 1000, 10000, False, True),
+            ('STARLINK 100MBps', 'Services', 200, 2000, False, True),
+            ('STARLINK 200MBps', 'Services', 200, 2000, False, True),
+            ('STARLINK 500MBps', 'Services', 600, 6000, False, True),
+            ('STARLINK 1GBps', 'Services', 1200, 12000, False, True),
         ]
         
         for material_data in materials_data:

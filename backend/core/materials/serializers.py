@@ -24,6 +24,7 @@ class MaterialSerializer(serializers.ModelSerializer):
             'id', 'name', 'description', 'category', 'category_name',
             'price_france', 'price_morocco', 'price_difference_percentage',
             'is_auto_calculated', 'is_service', 'unit',
+            'calculation_type', 'multiplier', 'min_quantity', 'max_quantity', 'conditions',
             'is_active', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at', 'price_difference_percentage']
@@ -46,7 +47,7 @@ class MaterialListSerializer(serializers.ModelSerializer):
         model = Material
         fields = [
             'id', 'name', 'description', 'category', 'category_name', 'price_france', 'price_morocco',
-            'is_auto_calculated', 'is_service', 'unit', 'is_active'
+            'is_auto_calculated', 'is_service', 'unit', 'calculation_type', 'multiplier', 'is_active'
         ]
     
     def get_category(self, obj):

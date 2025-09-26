@@ -3,9 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const PrivateRoute = ({ children }) => {
-    const { user, loading, authToken } = useAuth();
-
-    console.log('PrivateRoute - user:', user, 'loading:', loading, 'authToken:', authToken ? 'Present' : 'Missing');
+    const { user, loading } = useAuth();
 
     if (loading) {
         return (
@@ -17,14 +15,9 @@ const PrivateRoute = ({ children }) => {
     }
 
     if (!user) {
-        console.log('PrivateRoute - No user found, redirecting to login');
         return <Navigate to="/login" />;
     }
-
-    console.log('PrivateRoute - User authenticated, rendering children:', children);
-    console.log('PrivateRoute - Children type:', typeof children);
     
-    // Force render the children
     return (
         <div>
             {children}

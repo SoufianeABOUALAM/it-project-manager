@@ -112,7 +112,11 @@ const MaterialsDashboard = () => {
   const [priceFrance, setPriceFrance] = useState(0);
   const [priceMorocco, setPriceMorocco] = useState(0);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isAddingInternetServices, setIsAddingInternetServices] = useState(false);
+  
+  // Delete confirmation modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [materialToDelete, setMaterialToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Custom material modal state
   const { isOpen: isAddMaterialOpen, onOpen: onAddMaterialOpen, onClose: onAddMaterialClose } = useDisclosure();
@@ -150,24 +154,15 @@ const MaterialsDashboard = () => {
                            Array.isArray(materialsResponse.data) ? materialsResponse.data : [];
       const categoriesData = Array.isArray(categoriesResponse.data) ? categoriesResponse.data : [];
       
-      console.log('Materials API Response:', materialsResponse.data);
-      console.log('Categories API Response:', categoriesResponse.data);
-      console.log('Processed Materials:', materialsData);
-      console.log('Processed Categories:', categoriesData);
+      // Materials and categories data loaded successfully
       
-      // Debug: Check if materials have category information
-      if (materialsData.length > 0) {
-        console.log('First material structure:', materialsData[0]);
-        console.log('Material category field:', materialsData[0].category);
-        console.log('Material category_name field:', materialsData[0].category_name);
-      }
+      // Materials data structure verified
       
       setMaterials(materialsData);
       setCategories(categoriesData);
       setError(null);
     } catch (error) {
-      console.error('Failed to fetch materials:', error);
-      console.error('Error details:', error.response?.data);
+      // Failed to fetch materials
       setError('Failed to load materials data');
     } finally {
       setLoading(false);
@@ -240,11 +235,7 @@ const MaterialsDashboard = () => {
                         (material.category && typeof material.category === 'object' ? material.category.name : null) ||
                         'Uncategorized';
     
-    console.log(`Material "${material.name}" - category fields:`, {
-      category_name: material.category_name,
-      category: material.category,
-      selected: categoryName
-    });
+    // Material category processed
     
     if (!groups[categoryName]) {
       groups[categoryName] = [];
@@ -253,13 +244,12 @@ const MaterialsDashboard = () => {
     return groups;
   }, {});
 
-  console.log('Grouped materials by category:', groupedMaterials);
-  console.log('Available categories:', categories.map(cat => cat.name));
+  // Materials grouped by category successfully
 
   // Ensure all categories are shown, even if they don't have materials
   const allCategoriesWithMaterials = categories.map(category => {
     const categoryMaterials = groupedMaterials[category.name] || [];
-    console.log(`Category "${category.name}": ${categoryMaterials.length} materials`);
+    // Category materials counted
     return {
       ...category,
       materials: categoryMaterials,
@@ -267,7 +257,7 @@ const MaterialsDashboard = () => {
     };
   });
 
-  console.log('All categories with materials:', allCategoriesWithMaterials);
+  // All categories processed successfully
 
   const filteredMaterials = materials.filter(material => {
     const matchesSearch = material.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -355,7 +345,7 @@ const MaterialsDashboard = () => {
 
       onClose();
     } catch (error) {
-      console.error('Failed to update prices:', error);
+      // Failed to update prices
       toast({
         title: "Update Failed",
         description: "Failed to update material prices. Please try again.",
@@ -369,48 +359,10 @@ const MaterialsDashboard = () => {
     }
   };
 
-  // Setup all required materials for project form
-  const setupRequiredMaterials = async () => {
-    setIsAddingInternetServices(true);
-    try {
-      const response = await axios.post(
-        `${API_URL}materials/setup-required/`,
-        {},
-        {
-          headers: { Authorization: `Token ${authToken}` }
-        }
-      );
-
-      // Refresh materials list
-      await fetchMaterials();
-
-      toast({
-        title: "Required Materials Setup Complete!",
-        description: `${response.data.created} materials created, ${response.data.updated} updated.`,
-        status: "success",
-        duration: 5000,
-        isClosable: true,
-        position: "top-right",
-      });
-
-    } catch (error) {
-      console.error('Failed to setup required materials:', error);
-      toast({
-        title: "Setup Failed",
-        description: error.response?.data?.error || "Failed to setup required materials. Please try again.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-        position: "top-right",
-      });
-    } finally {
-      setIsAddingInternetServices(false);
-    }
-  };
 
   // Add Internet Services materials
   const addInternetServices = async () => {
-    setIsAddingInternetServices(true);
+    // setIsAddingInternetServices(true); // Removed - function no longer used
     try {
       const internetServicesData = [
         // STARLINK Services
@@ -600,7 +552,7 @@ const MaterialsDashboard = () => {
       });
 
     } catch (error) {
-      console.error('Failed to add internet services:', error);
+      // Failed to add internet services
       toast({
         title: "Failed to Add Internet Services",
         description: error.response?.data?.error || "Failed to add internet services. Please try again.",
@@ -610,8 +562,85 @@ const MaterialsDashboard = () => {
         position: "top-right",
       });
     } finally {
-      setIsAddingInternetServices(false);
+      // setIsAddingInternetServices(false); // Removed - function no longer used
     }
+  };
+
+  // Delete material function - opens confirmation modal
+  const handleDeleteMaterial = (material) => {
+    setMaterialToDelete(material);
+    setDeleteModalOpen(true);
+  };
+
+  // Confirm delete material function
+  const confirmDeleteMaterial = async () => {
+    if (!materialToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await axios.delete(`${API_URL}materials/custom-material/${materialToDelete.id}/`, {
+        headers: { Authorization: `Token ${authToken}` }
+      });
+
+      // Show success message with cascade information
+      const cascadeInfo = response.data.cascade_info;
+      let successMessage = response.data.message;
+      
+      if (cascadeInfo && cascadeInfo.affected_projects.length > 0) {
+        successMessage += `\n\nAffected projects: ${cascadeInfo.affected_projects.join(', ')}`;
+      }
+      
+      toast({
+        title: "Material Deleted Successfully!",
+        description: successMessage,
+        status: "success",
+        duration: 6000, // Longer duration for important cascade info
+        isClosable: true,
+        position: "top-right",
+      });
+
+      // Refresh materials list
+      fetchMaterials();
+      
+      // Close modal
+      setDeleteModalOpen(false);
+      setMaterialToDelete(null);
+    } catch (error) {
+      let errorTitle = "Failed to Delete Material";
+      let errorDescription = "Failed to delete material. Please try again.";
+      
+      // Handle specific error cases
+      if (error.response?.data?.error) {
+        const backendError = error.response.data.error;
+        
+        if (backendError.includes("static/auto-calculated")) {
+          errorTitle = "Cannot Delete Static Material";
+          errorDescription = `"${materialToDelete?.name}" is a static material that cannot be deleted. Only custom materials can be deleted.`;
+        } else if (backendError.includes("not found")) {
+          errorTitle = "Material Not Found";
+          errorDescription = "The material you're trying to delete no longer exists.";
+        } else {
+          errorDescription = backendError;
+        }
+      }
+      
+      toast({
+        title: errorTitle,
+        description: errorDescription,
+        status: "error",
+        duration: 8000, // Longer duration for important messages
+        isClosable: true,
+        position: "top-right",
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Cancel delete function
+  const cancelDelete = () => {
+    setDeleteModalOpen(false);
+    setMaterialToDelete(null);
   };
 
   if (loading) {
@@ -821,31 +850,6 @@ const MaterialsDashboard = () => {
                     </HStack>
                     
                     <HStack spacing={3}>
-                      {category.name === 'Services' && (
-                        <Button
-                          size="sm"
-                          bg="rgba(255, 255, 255, 0.25)"
-                          color="white"
-                          borderRadius="full"
-                          px={4}
-                          py={2}
-                          fontSize="sm"
-                          fontWeight="bold"
-                          backdropFilter="blur(20px)"
-                          border="1px solid"
-                          borderColor="rgba(255, 255, 255, 0.3)"
-                          _hover={{
-                            bg: "rgba(255, 255, 255, 0.35)",
-                            transform: "translateY(-1px)",
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.2)"
-                          }}
-                          onClick={setupRequiredMaterials}
-                          isLoading={isAddingInternetServices}
-                          loadingText="Setting up..."
-                        >
-                          Setup Required Materials
-                        </Button>
-                      )}
                       <Badge
                         bg="rgba(255, 255, 255, 0.25)"
                         color="white"
@@ -1087,6 +1091,28 @@ const MaterialsDashboard = () => {
                                       onClick={() => openPriceUpdateModal(material)}
                                     />
                                   </Tooltip>
+                                  
+                                  {/* Delete button - only for non-static materials */}
+                                  {!material.is_auto_calculated && (
+                                    <Tooltip label="Delete Material">
+                                      <IconButton
+                                        aria-label="Delete Material"
+                                        icon={<Icon as={MdDelete} />}
+                                        size="sm"
+                                        variant="ghost"
+                                        colorScheme="red"
+                                        borderRadius="full"
+                                        _hover={{
+                                          bg: 'red.100',
+                                          transform: 'scale(1.1)',
+                                          boxShadow: '0 4px 12px rgba(245, 101, 101, 0.3)',
+                                        }}
+                                        transition="all 0.3s ease"
+                                        onClick={() => handleDeleteMaterial(material)}
+                                      />
+                                    </Tooltip>
+                                  )}
+                                  
                                   {material.is_auto_calculated && (
                                     <Tooltip label="Auto Calculated">
                                       <Icon as={MdAutoGraph} w="16px" h="16px" color="blue.500" />
@@ -1427,6 +1453,131 @@ const MaterialsDashboard = () => {
           });
         }}
       />
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={deleteModalOpen} onClose={cancelDelete} size="md" isCentered>
+        <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(10px)" />
+        <ModalContent
+          bg="white"
+          borderRadius="2xl"
+          boxShadow="0 25px 50px -12px rgba(0, 0, 0, 0.25)"
+          border="1px solid"
+          borderColor="gray.200"
+          mx={4}
+        >
+          <ModalHeader
+            bgGradient="linear(to-r, #FF6B35 0%, #20B2AA 100%)"
+            color="white"
+            borderRadius="2xl 2xl 0 0"
+            textAlign="center"
+            py={6}
+            position="relative"
+            overflow="hidden"
+          >
+            <Box
+              position="absolute"
+              top="-50%"
+              left="-50%"
+              width="200%"
+              height="200%"
+              bg="white"
+              opacity="0.1"
+              borderRadius="50%"
+              animation="pulse 2s infinite"
+            />
+            <Heading size="lg" position="relative" zIndex="1">
+              🗑️ Delete Material
+            </Heading>
+          </ModalHeader>
+
+          <ModalCloseButton
+            color="white"
+            _hover={{ bg: "whiteAlpha.200" }}
+            position="absolute"
+            top={4}
+            right={4}
+            zIndex="2"
+          />
+
+          <ModalBody py={8} textAlign="center">
+            <VStack spacing={6}>
+              <Box
+                p={6}
+                bg="red.50"
+                borderRadius="xl"
+                border="2px solid"
+                borderColor="red.200"
+                w="full"
+              >
+                <Text fontSize="lg" fontWeight="semibold" color="red.800" mb={2}>
+                  ⚠️ Warning: This action cannot be undone!
+                </Text>
+                <Text color="gray.700" fontSize="md">
+                  Are you sure you want to delete <strong>"{materialToDelete?.name}"</strong>?
+                </Text>
+                <Text color="gray.600" fontSize="sm" mt={2}>
+                  This material will be permanently removed from the system.
+                </Text>
+                <Text color="orange.600" fontSize="sm" mt={2} fontWeight="semibold">
+                  ⚠️ If this material is used in any projects, it will be automatically removed from those projects and their budgets will be recalculated.
+                </Text>
+              </Box>
+            </VStack>
+          </ModalBody>
+
+          <ModalFooter
+            bg="gray.50"
+            borderRadius="0 0 2xl 2xl"
+            py={6}
+            justifyContent="center"
+            gap={4}
+          >
+            <Button
+              variant="outline"
+              borderColor="gray.300"
+              color="gray.700"
+              borderRadius="xl"
+              px={8}
+              py={3}
+              _hover={{
+                bg: "gray.100",
+                borderColor: "gray.400",
+                transform: "translateY(-1px)",
+              }}
+              _active={{
+                transform: "translateY(0px)",
+              }}
+              transition="all 0.3s ease"
+              fontWeight="semibold"
+              onClick={cancelDelete}
+              isDisabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              bgGradient="linear(to-r, #e53e3e 0%, #c53030 100%)"
+              color="white"
+              borderRadius="xl"
+              px={8}
+              py={3}
+              _hover={{
+                transform: "translateY(-2px)",
+                boxShadow: "0 8px 25px rgba(229, 62, 62, 0.4)",
+              }}
+              _active={{
+                transform: "translateY(0px)",
+              }}
+              transition="all 0.3s ease"
+              fontWeight="bold"
+              isLoading={isDeleting}
+              loadingText="Deleting..."
+              onClick={confirmDeleteMaterial}
+            >
+              🗑️ Delete Material
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Global CSS Animations */}
       <style>{`

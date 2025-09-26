@@ -19,7 +19,8 @@ class RegisterView(APIView):
         serializer = UserRegistrationSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
             user = serializer.save()
-            token, created = Token.objects.get_or_create(user=user)
+            # Create a new token for the newly registered user
+            token = Token.objects.create(user=user)
             return Response({
                 'message': 'User created successfully',
                 'status': True,
@@ -38,7 +39,15 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.validated_data['user']
-            token, created = Token.objects.get_or_create(user=user)
+            
+            # Delete any existing token for this user to generate a new one
+            try:
+                user.auth_token.delete()
+            except:
+                pass  # Token doesn't exist, which is fine
+            
+            # Create a new token for this login session
+            token = Token.objects.create(user=user)
             login(request, user)
             return Response({
                 'message': 'Login successful',
@@ -98,7 +107,7 @@ class ChangePasswordView(APIView):
             
             # Delete old token and create new one
             request.user.auth_token.delete()
-            token, created = Token.objects.get_or_create(user=user)
+            token = Token.objects.create(user=user)
             
             return Response({
                 'message': 'Password changed successfully',

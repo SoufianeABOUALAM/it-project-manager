@@ -889,6 +889,7 @@ const UsersDashboard = () => {
               size="lg"
               borderRadius="full"
               bg="rgba(255, 255, 255, 0.8)"
+              zIndex="10"
               _hover={{
                 bg: "rgba(255, 107, 53, 0.1)",
                 transform: "scale(1.1)",
@@ -1235,6 +1236,7 @@ const UsersDashboard = () => {
               size="lg"
               borderRadius="full"
               bg="rgba(255, 255, 255, 0.8)"
+              zIndex="10"
               _hover={{
                 bg: "rgba(255, 107, 53, 0.1)",
                 transform: "scale(1.1)",

@@ -10,9 +10,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # Fix description field in Project table if it exists
-        migrations.RunSQL(
-            "ALTER TABLE projects_project MODIFY COLUMN description TEXT DEFAULT NULL",
-            reverse_sql="ALTER TABLE projects_project MODIFY COLUMN description TEXT",
-        ),
+        # SQLite doesn't support MODIFY COLUMN, so this migration is empty
+        # The fields will be created with proper defaults in the model definitions
     ]

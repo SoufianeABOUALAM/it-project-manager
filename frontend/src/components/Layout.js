@@ -4,7 +4,6 @@ import {
   Flex,
   Text,
   Button,
-  Container,
   HStack,
   Icon,
   useDisclosure,
@@ -22,7 +21,6 @@ import {
   useColorModeValue,
   IconButton,
   Tooltip,
-  Spacer,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
@@ -30,27 +28,14 @@ import {
 } from '@chakra-ui/react';
 import { 
   HamburgerIcon, 
-  ChevronLeftIcon, 
-  ChevronRightIcon,
-  SettingsIcon,
-  BellIcon,
-  SearchIcon,
-  SunIcon,
-  MoonIcon
 } from '@chakra-ui/icons';
 import { 
-  MdAdminPanelSettings, 
   MdDashboard, 
   MdPeople, 
   MdInventory, 
   MdCategory, 
-  MdAttachMoney,
   MdLogout,
-  MdMenu,
   MdBusiness,
-  MdNotifications,
-  MdSearch,
-  MdSettings,
   MdAccountCircle
 } from 'react-icons/md';
 import { Link, useLocation } from 'react-router-dom';
@@ -71,8 +56,6 @@ const globalStyles = `
 `;
 
 const Layout = ({ children }) => {
-    console.log('🏗️ Layout component is rendering, children:', children);
-    
     const { user, logoutUser } = useAuth();
     const { isOpen, onOpen, onClose } = useDisclosure();
     const location = useLocation();
@@ -99,12 +82,16 @@ const Layout = ({ children }) => {
         { path: '/admin/users', label: 'Users', icon: MdPeople, adminOnly: true, tier: 1 },
         { path: '/admin/categories', label: 'Categories', icon: MdCategory, adminOnly: true, tier: 1 },
         { path: '/admin/materials', label: 'Materials', icon: MdInventory, adminOnly: true, tier: 1 },
+        // Regular user navigation items
+        { path: '/dashboard', label: 'Dashboard', icon: MdDashboard, adminOnly: false, tier: 1 },
+        { path: '/projects', label: 'My Projects', icon: MdBusiness, adminOnly: false, tier: 1 },
     ];
 
     // Check if current path is active
     const isActive = (path) => {
         if (path === '/admin' && location.pathname === '/admin') return true;
-        if (path !== '/admin' && location.pathname.startsWith(path)) return true;
+        if (path === '/dashboard' && (location.pathname === '/' || location.pathname === '/dashboard')) return true;
+        if (path !== '/admin' && path !== '/dashboard' && location.pathname.startsWith(path)) return true;
         return false;
     };
 
@@ -149,8 +136,10 @@ const Layout = ({ children }) => {
                     {/* Navigation with Proper Hierarchy */}
                     <VStack spacing={2} p={5} align="stretch">
                         {user && navItems.map((item) => {
-                            // Show item if user is admin or if item is not admin-only
-                            if (item.adminOnly && !user.is_admin) return null;
+                            // Show admin items only to admin users, show regular items only to regular users
+                            const isAdmin = user.is_admin || user.is_staff || user.role === 'admin' || user.role === 'super_admin';
+                            if (item.adminOnly && !isAdmin) return null;
+                            if (!item.adminOnly && isAdmin) return null;
                             
                             const isItemActive = isActive(item.path);
                             
@@ -395,7 +384,7 @@ const Layout = ({ children }) => {
                                                     🏠 Home
                                             </BreadcrumbLink>
                                         </BreadcrumbItem>
-                                            <BreadcrumbSeparator color="gray.400" />
+                                            <Box color="gray.400" mx={2}>/</Box>
                                         <BreadcrumbItem isCurrentPage>
                                                 <Text 
                                                     color="gray.700" 
@@ -415,90 +404,6 @@ const Layout = ({ children }) => {
                             <HStack spacing={3}>
                                 {user ? (
                                     <>
-                                        {/* Enhanced Search */}
-                                        <Box position="relative">
-                                            <IconButton
-                                                variant="ghost"
-                                                aria-label="Search"
-                                                icon={<SearchIcon />}
-                                                color="gray.600"
-                                                size="lg"
-                                                borderRadius="xl"
-                                                bg="rgba(255, 255, 255, 0.8)"
-                                                border="1px solid"
-                                                borderColor="rgba(255, 255, 255, 0.3)"
-                                                _hover={{ 
-                                                    bg: 'rgba(255, 107, 53, 0.1)',
-                                                    borderColor: '#FF6B35',
-                                                    transform: 'scale(1.05)',
-                                                    boxShadow: '0 4px 15px rgba(255, 107, 53, 0.2)'
-                                                }}
-                                                transition="all 0.3s ease"
-                                            />
-                                        </Box>
-                                        
-                                        {/* Enhanced Notifications */}
-                                        <Tooltip label="Notifications" placement="bottom" hasArrow>
-                                            <Box position="relative">
-                                                <IconButton
-                                                    variant="ghost"
-                                                    aria-label="Notifications"
-                                                    icon={<BellIcon />}
-                                                    color="gray.600"
-                                                    size="lg"
-                                                    borderRadius="xl"
-                                                    bg="rgba(255, 255, 255, 0.8)"
-                                                    border="1px solid"
-                                                    borderColor="rgba(255, 255, 255, 0.3)"
-                                                    _hover={{ 
-                                                        bg: 'rgba(32, 178, 170, 0.1)',
-                                                        borderColor: '#20B2AA',
-                                                        transform: 'scale(1.05)',
-                                                        boxShadow: '0 4px 15px rgba(32, 178, 170, 0.2)'
-                                                    }}
-                                                    transition="all 0.3s ease"
-                                                />
-                                                <Badge
-                                                    position="absolute"
-                                                    top="-2px"
-                                                    right="-2px"
-                                                    bgGradient="linear(to-r, #FF6B35 0%, #e55a2b 100%)"
-                                                    color="white"
-                                                    borderRadius="full"
-                                                    w="7"
-                                                    h="7"
-                                                    fontSize="xs"
-                                                    fontWeight="bold"
-                                                    boxShadow="0 2px 8px rgba(255, 107, 53, 0.4)"
-                                                    animation="pulse 2s infinite"
-                                                >
-                                                    3
-                                                </Badge>
-                                            </Box>
-                                        </Tooltip>
-                                        
-                                        {/* Enhanced Settings */}
-                                        <Tooltip label="Settings" placement="bottom" hasArrow>
-                                            <IconButton
-                                                variant="ghost"
-                                                aria-label="Settings"
-                                                icon={<SettingsIcon />}
-                                                color="gray.600"
-                                                size="lg"
-                                                borderRadius="xl"
-                                                bg="rgba(255, 255, 255, 0.8)"
-                                                border="1px solid"
-                                                borderColor="rgba(255, 255, 255, 0.3)"
-                                                _hover={{ 
-                                                    bg: 'rgba(255, 107, 53, 0.1)',
-                                                    borderColor: '#FF6B35',
-                                                    transform: 'scale(1.05) rotate(90deg)',
-                                                    boxShadow: '0 4px 15px rgba(255, 107, 53, 0.2)'
-                                                }}
-                                                transition="all 0.3s ease"
-                                            />
-                                        </Tooltip>
-                                        
                                         {/* Enhanced User Profile */}
                                         <Tooltip label="Profile" placement="bottom" hasArrow>
                                             <IconButton
@@ -590,8 +495,10 @@ const Layout = ({ children }) => {
                     <DrawerBody p={6}>
                         <VStack spacing={2} align="stretch">
                             {user && navItems.map((item) => {
-                                // Show item if user is admin or if item is not admin-only
-                                if (item.adminOnly && !user.is_admin) return null;
+                                // Show admin items only to admin users, show regular items only to regular users
+                                const isAdmin = user.is_admin || user.is_staff || user.role === 'admin' || user.role === 'super_admin';
+                                if (item.adminOnly && !isAdmin) return null;
+                                if (!item.adminOnly && isAdmin) return null;
                                 
                                 const isItemActive = isActive(item.path);
                                 

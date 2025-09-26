@@ -29,10 +29,10 @@ import {
   Icon,
   useDisclosure
 } from '@chakra-ui/react';
-import { MdAdd, MdInfo, MdCalculate } from 'react-icons/md';
+import { MdAdd, MdInfo, MdCalculate, MdClose } from 'react-icons/md';
 import axios from 'axios';
 
-const API_URL = 'http://127.0.0.1:8000/api/';
+const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000/api/';
 
 const AddCustomMaterialModal = ({ isOpen, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -51,53 +51,40 @@ const AddCustomMaterialModal = ({ isOpen, onClose, onSuccess }) => {
   
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [conditions, setConditions] = useState({
-    min_users: 0,
-    min_servers: 0,
-    has_videoconference: false,
-    has_file_server: false,
-    has_local_apps: false
-  });
   
   const toast = useToast();
 
   const calculationTypes = [
     { 
       value: 'PER_USER', 
-      label: 'Per User', 
-      description: 'Quantity = Users × Multiplier',
+      label: 'Per User (Number of Users)', 
+      description: 'Quantity = Number of Users × Multiplier',
       icon: '👥'
     },
     { 
       value: 'PER_SERVER', 
       label: 'Per Server', 
-      description: 'Quantity = Servers × Multiplier',
+      description: 'Quantity = Number of Servers × Multiplier',
       icon: '🖥️'
     },
     { 
-      value: 'PER_DEVICE', 
-      label: 'Per Computer/Device', 
-      description: 'Quantity = Computers/Devices × Multiplier',
+      value: 'PER_PC', 
+      label: 'Per PC (Number of PCs)', 
+      description: 'Quantity = Number of PCs × Multiplier',
       icon: '💻'
     },
     { 
-      value: 'PER_PROJECT', 
-      label: 'Per Project', 
-      description: 'Quantity = Multiplier (same for all projects)',
-      icon: '📋'
+      value: 'PER_DEVICE', 
+      label: 'Per Device', 
+      description: 'Quantity = Number of Devices × Multiplier',
+      icon: '📱'
     },
     { 
       value: 'FIXED', 
       label: 'Fixed Amount', 
-      description: 'Always add this quantity',
+      description: 'Always add this exact quantity',
       icon: '🔒'
     },
-    { 
-      value: 'CONDITIONAL', 
-      label: 'Conditional', 
-      description: 'Add only if conditions are met',
-      icon: '⚡'
-    }
   ];
 
   useEffect(() => {
@@ -123,10 +110,10 @@ const AddCustomMaterialModal = ({ isOpen, onClose, onSuccess }) => {
     try {
       const submitData = {
         ...formData,
-        conditions: formData.calculation_type === 'CONDITIONAL' ? conditions : {}
+        conditions: {}
       };
 
-      const response = await axios.post(`${API_URL}materials/materials/`, submitData, {
+      const response = await axios.post(`${API_URL}materials/custom-material/`, submitData, {
         headers: { Authorization: `Token ${localStorage.getItem('authToken')}` }
       });
 
@@ -157,7 +144,6 @@ const AddCustomMaterialModal = ({ isOpen, onClose, onSuccess }) => {
       });
 
     } catch (error) {
-      console.error('Failed to add material:', error);
       toast({
         title: 'Error Adding Material',
         description: error.response?.data?.error || 'Failed to add material. Please try again.',
@@ -192,6 +178,7 @@ const AddCustomMaterialModal = ({ isOpen, onClose, onSuccess }) => {
           bg="transparent"
           borderBottom="none"
           p={6}
+          position="relative"
         >
           <HStack spacing={4} align="center">
             <Box
@@ -211,6 +198,30 @@ const AddCustomMaterialModal = ({ isOpen, onClose, onSuccess }) => {
               </Text>
             </VStack>
           </HStack>
+          
+          {/* X Close Button */}
+          <Button
+            position="absolute"
+            top={4}
+            right={4}
+            size="sm"
+            variant="ghost"
+            onClick={onClose}
+            borderRadius="full"
+            p={2}
+            _hover={{
+              bg: "rgba(0, 0, 0, 0.1)",
+              transform: "scale(1.1)"
+            }}
+            _active={{
+              transform: "scale(0.95)"
+            }}
+            transition="all 0.2s ease"
+            color="gray.500"
+            _hover={{ color: "gray.700" }}
+          >
+            <Icon as={MdClose} w="20px" h="20px" />
+          </Button>
         </ModalHeader>
 
         <ModalBody p={6} bg="transparent">
@@ -416,7 +427,6 @@ const AddCustomMaterialModal = ({ isOpen, onClose, onSuccess }) => {
                       {formData.calculation_type === 'PER_DEVICE' && 'Units per computer/device'}
                       {formData.calculation_type === 'PER_PROJECT' && 'Total units for project'}
                       {formData.calculation_type === 'FIXED' && 'Fixed quantity to add'}
-                      {formData.calculation_type === 'CONDITIONAL' && 'Quantity when conditions are met'}
                     </FormHelperText>
                   </FormControl>
 
@@ -439,82 +449,6 @@ const AddCustomMaterialModal = ({ isOpen, onClose, onSuccess }) => {
                   </FormControl>
                 </HStack>
 
-                {/* Conditional Settings */}
-                {formData.calculation_type === 'CONDITIONAL' && (
-                  <Box
-                    p={4}
-                    borderRadius="lg"
-                    bg="rgba(255, 107, 53, 0.1)"
-                    border="2px solid"
-                    borderColor="rgba(255, 107, 53, 0.2)"
-                  >
-                    <Text fontSize="sm" fontWeight="600" color="gray.700" mb={3}>
-                      ⚡ Conditions (Material will be added only if ALL conditions are met)
-                    </Text>
-                    
-                    <VStack spacing={3} align="stretch">
-                      <HStack spacing={4}>
-                        <FormControl flex={1}>
-                          <FormLabel fontSize="xs" color="gray.600">
-                            Minimum Users
-                          </FormLabel>
-                          <NumberInput
-                            value={conditions.min_users}
-                            onChange={(value) => setConditions({...conditions, min_users: parseInt(value) || 0})}
-                            min={0}
-                          >
-                            <NumberInputField size="sm" />
-                          </NumberInput>
-                        </FormControl>
-
-                        <FormControl flex={1}>
-                          <FormLabel fontSize="xs" color="gray.600">
-                            Minimum Servers
-                          </FormLabel>
-                          <NumberInput
-                            value={conditions.min_servers}
-                            onChange={(value) => setConditions({...conditions, min_servers: parseInt(value) || 0})}
-                            min={0}
-                          >
-                            <NumberInputField size="sm" />
-                          </NumberInput>
-                        </FormControl>
-                      </HStack>
-
-                      <HStack spacing={4}>
-                        <FormControl>
-                          <FormLabel fontSize="xs" color="gray.600">
-                            Has Videoconference
-                          </FormLabel>
-                          <Switch
-                            isChecked={conditions.has_videoconference}
-                            onChange={(e) => setConditions({...conditions, has_videoconference: e.target.checked})}
-                          />
-                        </FormControl>
-
-                        <FormControl>
-                          <FormLabel fontSize="xs" color="gray.600">
-                            Has File Server
-                          </FormLabel>
-                          <Switch
-                            isChecked={conditions.has_file_server}
-                            onChange={(e) => setConditions({...conditions, has_file_server: e.target.checked})}
-                          />
-                        </FormControl>
-
-                        <FormControl>
-                          <FormLabel fontSize="xs" color="gray.600">
-                            Has Local Apps
-                          </FormLabel>
-                          <Switch
-                            isChecked={conditions.has_local_apps}
-                            onChange={(e) => setConditions({...conditions, has_local_apps: e.target.checked})}
-                          />
-                        </FormControl>
-                      </HStack>
-                    </VStack>
-                  </Box>
-                )}
               </VStack>
             </Box>
           </VStack>

@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunSQL(
-            "ALTER TABLE projects_project MODIFY COLUMN status VARCHAR(20) DEFAULT 'draft'",
-            reverse_sql="ALTER TABLE projects_project MODIFY COLUMN status VARCHAR(20)",
+            "ALTER TABLE projects_project ADD COLUMN status VARCHAR(20) DEFAULT 'draft'",
+            reverse_sql="ALTER TABLE projects_project DROP COLUMN status",
         ),
     ]

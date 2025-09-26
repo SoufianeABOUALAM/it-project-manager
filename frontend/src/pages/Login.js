@@ -19,14 +19,12 @@ import {
   AlertIcon,
   AlertDescription,
 } from '@chakra-ui/react';
-import { FcGoogle } from 'react-icons/fc';
 import { MdOutlineRemoveRedEye } from 'react-icons/md';
 import { RiEyeCloseLine } from 'react-icons/ri';
 import { FaChevronLeft } from 'react-icons/fa';
 import { useAuth } from '../contexts/AuthContext';
 // Custom components
 import { HSeparator } from '../components/separator/Separator';
-import FixedPlugin from '../components/fixedPlugin/FixedPlugin';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -46,16 +44,6 @@ const Login = () => {
   const textColorDetails = useColorModeValue("navy.700", "secondaryGray.600");
   const textColorBrand = useColorModeValue("brand.500", "white");
   const brandStars = useColorModeValue("brand.500", "brand.400");
-  const googleBg = useColorModeValue("white", "whiteAlpha.200");
-  const googleText = useColorModeValue("navy.700", "white");
-  const googleHover = useColorModeValue(
-    { bg: "gray.100" },
-    { bg: "whiteAlpha.300" }
-  );
-  const googleActive = useColorModeValue(
-    { bg: "gray.200" },
-    { bg: "whiteAlpha.200" }
-  );
 
   const handleClick = () => setShow(!show);
 
@@ -135,34 +123,6 @@ const Login = () => {
             me='auto'
             mb={{ base: "20px", md: "auto" }}>
             
-            {/* Google Sign In Button */}
-            <Button
-              fontSize='sm'
-              me='0px'
-              mb='26px'
-              py='15px'
-              h='50px'
-              borderRadius='16px'
-              bg={googleBg}
-              color={googleText}
-              fontWeight='500'
-              border='1px solid'
-              borderColor='secondaryGray.100'
-              _hover={googleHover}
-              _active={googleActive}
-              _focus={googleActive}>
-              <Icon as={FcGoogle} w='20px' h='20px' me='10px' />
-              Sign in with Google
-            </Button>
-
-            {/* Divider */}
-            <Flex align='center' mb='25px'>
-              <HSeparator />
-              <Text color='gray.400' mx='14px'>
-                or
-              </Text>
-              <HSeparator />
-            </Flex>
 
             {/* Error Alert */}
               {error && (
@@ -564,7 +524,6 @@ const Login = () => {
           </Flex>
         </Box>
       </Flex>
-      <FixedPlugin />
     </Flex>
   );
 };
