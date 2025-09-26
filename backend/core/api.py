@@ -1,12 +1,12 @@
-from django.http import JsonResponse
-from django.conf import settings
-import os
-
 def handler(request):
-    """Main handler for Vercel"""
-    return JsonResponse({
-        'status': 'ok',
-        'message': 'Django backend is running on Vercel',
-        'environment': 'production' if not settings.DEBUG else 'development',
-        'version': '1.0.0'
-    })
+    """Simple handler for Vercel"""
+    return {
+        'statusCode': 200,
+        'headers': {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        },
+        'body': '{"status": "ok", "message": "Backend is running on Vercel", "version": "1.0.0"}'
+    }
