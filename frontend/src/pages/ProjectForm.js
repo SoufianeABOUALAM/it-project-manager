@@ -52,8 +52,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 
-const API_URL = 'http://127.0.0.1:8000/api/projects/projects/';
-const MATERIALS_API_URL = 'http://127.0.0.1:8000/api/materials/';
+const API_URL = process.env.REACT_APP_API_URL + 'projects/projects/' || 'http://127.0.0.1:8000/api/projects/projects/';
+const MATERIALS_API_URL = process.env.REACT_APP_API_URL + 'materials/' || 'http://127.0.0.1:8000/api/materials/';
 
 const ProjectForm = () => {
     const { authToken } = useAuth();

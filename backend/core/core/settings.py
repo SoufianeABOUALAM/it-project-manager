@@ -88,11 +88,11 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-# Database configuration for Railway (PostgreSQL) and local development
+# Database configuration for Fly.io (PostgreSQL) and local development
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    # Production: Use Railway's PostgreSQL
+    # Production: Use Fly.io's PostgreSQL
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL)
     }
