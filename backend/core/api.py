@@ -3,9 +3,10 @@ from django.conf import settings
 import os
 
 def handler(request):
-    """Main API handler for Vercel"""
+    """Main handler for Vercel"""
     return JsonResponse({
         'status': 'ok',
         'message': 'Django backend is running on Vercel',
-        'environment': 'production' if not settings.DEBUG else 'development'
+        'environment': 'production' if not settings.DEBUG else 'development',
+        'version': '1.0.0'
     })
